@@ -70,19 +70,18 @@ public class ServerInstance implements Runnable {
     private void decodeCommands() {
         String[] commands;
         if (connectionHandler.readAscii()) {
-            if(DEBUG) System.out.println("message received" + connectionHandler.getIncomingMessage());
+            if (DEBUG) System.out.println("message : " + connectionHandler.getIncomingMessage());
 
             commands = connectionHandler.getIncomingMessage().split("\\s+");
             switch (commands[0].toUpperCase()) {
                 case "USER":
                     user(commands[1]);
-                    System.out.println(commands[1]);
                     break;
                 case "ACCT":
-
+                    acct(commands[1]);
                     break;
                 case "PASS":
-
+                    pass(commands[1]);
                     break;
                 case "TYPE":
 
@@ -119,6 +118,8 @@ public class ServerInstance implements Runnable {
                 default:
                     break;
             }
+        } else {
+            closeConnection();
         }
         sendResponse();
     }
@@ -127,7 +128,9 @@ public class ServerInstance implements Runnable {
      * Sends the response in ascii.
      */
     private void sendResponse() {
-        this.connectionHandler.sendAscii(responseCode + responseMessage);
+        if (!(this.connectionHandler.sendAscii(responseCode + responseMessage))) {
+            closeConnection();
+        }
     }
 
 
@@ -138,7 +141,7 @@ public class ServerInstance implements Runnable {
         try {
             this.running = false;
             this.connectionSocket.close();
-            System.out.println("Server instance ended");
+            System.out.println("Close Server instance");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -156,13 +159,46 @@ public class ServerInstance implements Runnable {
                 responseCode = "-";
                 responseMessage = "Invalid user-id, try again";
             }
-            case USER_FOUND, ACCT_FOUND -> {
+            case USER_FOUND, ACCT_FOUND, PASS_FOUND -> {
                 responseCode = "+";
                 responseMessage = "User-id valid, send account and password";
             }
             case LOGGED_IN -> {
                 responseCode = "!";
                 responseMessage = user + " logged in";
+            }
+        }
+    }
+
+    private void acct(String acct) {
+        credentialsHandler.checkAcct(acct);
+        switch (credentialsHandler.getState()) {
+            case INIT, USER_FOUND, PASS_FOUND -> {
+                responseCode = "-";
+                responseMessage = "Invalid Account, try again";
+            }
+            case ACCT_FOUND -> {
+                responseCode = "+";
+                responseMessage = "Account ok or not needed. Send your password next";
+            }
+            case LOGGED_IN -> {
+                responseCode = "!";
+                responseMessage = "Account was ok or not needed. Skip the password.";
+            }
+        }
+    }
+
+    private void pass(String pass) {
+        credentialsHandler.checkPass(pass);
+        switch (credentialsHandler.getState()) {
+
+            case INIT, USER_FOUND, ACCT_FOUND -> {
+                responseCode = "-";
+                responseMessage = "Wrong password, try again";
+            }
+            case LOGGED_IN -> {
+                responseCode = "!";
+                responseMessage = "Password is ok and you can begin file transfers.";
             }
         }
     }

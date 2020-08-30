@@ -13,7 +13,7 @@ import java.util.List;
  * Used to open the credentials file perform functions related to the login credentials
  */
 public class CredentialsHandler {
-    public enum State {INIT, USER_FOUND, ACCT_FOUND, LOGGED_IN}
+    public enum State {INIT, USER_FOUND, ACCT_FOUND, PASS_FOUND, LOGGED_IN}
 
     private String user;
     private String acct;
@@ -52,7 +52,7 @@ public class CredentialsHandler {
             BufferedReader br = new BufferedReader(new FileReader(String.valueOf(configFile)));
             String line;
             while ((line = br.readLine()) != null) {
-                String[] values = line.split(",",-1); // -1 limit enables include empty strings
+                String[] values = line.split(",", -1); // -1 limit enables include empty strings
                 userInfos.add(Arrays.asList(values));
             }
         } catch (IOException e) {
@@ -94,13 +94,25 @@ public class CredentialsHandler {
             if (this.acct.equals(acct)) {
                 state = State.ACCT_FOUND;
             }
+        } else if (state == State.PASS_FOUND) {
+            if (this.acct.equals(acct)) {
+                state = State.LOGGED_IN;
+
+            }
         }
     }
 
     public void checkPass(String pass) {
+        // account is already found, correct password => logs in
         if (state == State.ACCT_FOUND) {
             if (this.pass.equals(pass)) {
                 state = State.LOGGED_IN;
+            }
+        }
+        // haven't specified account but user and password is ok,
+        else if (state == State.USER_FOUND) {
+            if (this.pass.equals(pass)) {
+                state = State.PASS_FOUND;
             }
         }
     }

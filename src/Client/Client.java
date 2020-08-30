@@ -61,15 +61,16 @@ public class Client {
             }
             // Send the command over
             client.sendCommands();
-
-
         }
+        System.out.println("Client Session ended.");
     }
 
     private void displayMessage() {
         if (DEBUG) System.out.println("Waiting for incoming message");
         if (connectionHandler.readAscii()) {
             System.out.println(connectionHandler.getIncomingMessage());
+        } else {
+            closeConnection();
         }
     }
 
@@ -89,11 +90,9 @@ public class Client {
                     case "USER":
                         return user(commands);
                     case "ACCT":
-
-                        break;
+                        return acct(commands);
                     case "PASS":
-
-                        break;
+                        return pass(commands);
                     case "TYPE":
 
                         break;
@@ -142,28 +141,13 @@ public class Client {
     }
 
     /**
-     * Sends User name over to the server.
-     *
-     * @param commands command line args
-     */
-    private boolean user(String[] commands) {
-        // check commands is exactly 2 fields.
-        if (commands.length != 2) {
-            System.out.println("USER command takes exactly 1 argument. Please try again");
-            return false;
-        }
-        return true;
-    }
-
-
-    /**
      * Closes stops the program and closes the connection safely.
      */
     public void closeConnection() {
         try {
             this.running = false;
             this.clientSocket.close();
-            System.out.println("Client Session Ended");
+            System.out.println("Closing Client Session");
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Could not close connection");
@@ -178,4 +162,42 @@ public class Client {
             closeConnection();
         }
     }
+
+    //***********
+    // command functions
+    //**********
+
+
+    /**
+     * Sends User name over to the server.
+     *
+     * @param commands command line args
+     */
+    private boolean user(String[] commands) {
+        // check commands is exactly 2 fields.
+        if (commands.length != 2) {
+            System.out.println("USER command takes exactly 1 argument. Please try again");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean acct(String[] commands) {
+        // check commands is exactly 2 fields.
+        if (commands.length != 2) {
+            System.out.println("ACCT command takes exactly 1 argument. Please try again");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean pass(String[] commands) {
+        // check commands is exactly 2 fields.
+        if (commands.length != 2) {
+            System.out.println("Pass command takes exactly 1 argument. Please try again");
+            return false;
+        }
+        return true;
+    }
+
 }
