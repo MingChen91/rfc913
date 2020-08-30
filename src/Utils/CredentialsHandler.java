@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Used to open the credentials file perform functions related to the login credentials
  */
-public class Credentials {
+public class CredentialsHandler {
     public enum State {INIT, USER_FOUND, ACCT_FOUND, LOGGED_IN}
 
     private String user;
@@ -23,7 +23,7 @@ public class Credentials {
     private final List<List<String>> userInfos;
 
 
-    public Credentials(Path configFile) {
+    public CredentialsHandler(Path configFile) {
         this.configFile = configFile;
         userInfos = new ArrayList<>();
         loadCredentials();
@@ -32,7 +32,7 @@ public class Credentials {
 
     public static void main(String[] args) {
         FilesHandler fh = new FilesHandler("Server/Files", "Server/Configs");
-        Credentials c = new Credentials(fh.getConfigFilePath("userInfo.csv"));
+        CredentialsHandler c = new CredentialsHandler(fh.getConfigFilePath("userInfo.csv"));
         c.checkUser("user3");
         c.displayCurrentUser();
         System.out.println("state :" + c.getState());
@@ -58,7 +58,7 @@ public class Credentials {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(userInfos);
+        //System.out.println(userInfos);
     }
 
     /**

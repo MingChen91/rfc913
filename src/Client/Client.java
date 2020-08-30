@@ -5,6 +5,7 @@ import Utils.FilesHandler;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Set;
 
 
@@ -23,6 +24,7 @@ public class Client {
     // Server IP and Port
     private static final String IP = "localhost";
     private static final int PORT = 115;
+    private String inputCommands;
     // Sockets and IO streams
     private Socket clientSocket;
     private ConnectionHandler connectionHandler;
@@ -51,16 +53,23 @@ public class Client {
         while (client.running) {
             correctInput = false;
             // print out incoming message
-            if (DEBUG) System.out.println("Reading Message");
-            if (client.connectionHandler.readAscii()) {
-                System.out.println(client.connectionHandler.getIncomingMessage());
-            }
+            client.displayMessage();
             // decode input
-            while(!correctInput){
+            while (!correctInput) {
                 if (DEBUG) System.out.println("Collecting commands");
                 correctInput = client.decodeCommands();
             }
+            // Send the command over
+            client.sendCommands();
 
+
+        }
+    }
+
+    private void displayMessage() {
+        if (DEBUG) System.out.println("Waiting for incoming message");
+        if (connectionHandler.readAscii()) {
+            System.out.println(connectionHandler.getIncomingMessage());
         }
     }
 
@@ -72,7 +81,7 @@ public class Client {
         try {
             // Reading input
             BufferedReader inputStreamReader = new BufferedReader(new InputStreamReader(System.in));
-            String inputCommands = inputStreamReader.readLine();
+            inputCommands = inputStreamReader.readLine();
             String[] commands = inputCommands.split("\\s+");
             // Selecting which command to run
             if (availableCommands.contains(commands[0].toUpperCase())) {
@@ -134,6 +143,7 @@ public class Client {
 
     /**
      * Sends User name over to the server.
+     *
      * @param commands command line args
      */
     private boolean user(String[] commands) {
@@ -141,11 +151,6 @@ public class Client {
         if (commands.length != 2) {
             System.out.println("USER command takes exactly 1 argument. Please try again");
             return false;
-        }
-        // Send user credentials, closes connection if cannot connect
-        if (!(connectionHandler.sendAscii(commands[1]))) {
-            System.out.println("USER details did not send due to connection error");
-            closeConnection();
         }
         return true;
     }
@@ -162,6 +167,15 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Could not close connection");
+        }
+    }
+
+    /**
+     * Wrapper for sending commands. Closes connection if fails.
+     */
+    private void sendCommands() {
+        if (!(connectionHandler.sendAscii(inputCommands))) {
+            closeConnection();
         }
     }
 }
