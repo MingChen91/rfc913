@@ -33,13 +33,7 @@ public class ServerInstance implements Runnable {
         try {
             this.connectionHandler = new ConnectionHandler(connectionSocket);
         } catch (IOException e) {
-            e.printStackTrace();
-            running = false;
-            try {
-                connectionSocket.close();
-            } catch (IOException ioException) {
-                ioException.printStackTrace();
-            }
+            closeConnection();
             System.out.println("Could not initiate connection handler in server instance. Terminating server");
         }
     }
@@ -53,13 +47,17 @@ public class ServerInstance implements Runnable {
         boolean readOK;
         // Read input from Client
         System.out.println("Server instance started");
+        // Send server online message
+        connectionHandler.sendAscii("+MCHE226 SFTP Service");
+
         while (running) {
             readOK = connectionHandler.readAscii();
             if (readOK) {
                 a = connectionHandler.getIncomingMessage();
             }
-            System.out.println(a);
-            connectionHandler.sendAscii(a.toUpperCase());
+
+            if(!(connectionHandler.sendAscii(a.toUpperCase()))) closeConnection();
+
             if (a.equals("done")) closeConnection();
         }
         System.out.println("Server instance terminated");
@@ -72,6 +70,7 @@ public class ServerInstance implements Runnable {
         try {
             this.running = false;
             this.connectionSocket.close();
+            System.out.println("Server instance ended");
         } catch (IOException e) {
             e.printStackTrace();
         }

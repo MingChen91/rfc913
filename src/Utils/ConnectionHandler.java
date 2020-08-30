@@ -11,7 +11,7 @@ public class ConnectionHandler {
     private final BufferedReader inConnection;
     private String incomingMessage;
     // Debug flag
-    private final static boolean STACKTRACE = true;
+    private final static boolean STACKTRACE = false;
 
 
     /**

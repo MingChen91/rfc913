@@ -14,7 +14,7 @@ import java.util.Set;
 public class Client {
     // Infinite loop boolean
     private boolean running = true;
-
+    private final static boolean DEBUG = true;
     // Available Commands
     private static final Set<String> availableCommands = Set.of(
             "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR"
@@ -36,8 +36,8 @@ public class Client {
             connectionHandler = new ConnectionHandler(clientSocket);
             filesHandler = new FilesHandler("Client/Files", "Client/Configs");
         } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Error connecting to server");
+            System.out.println("Error connecting to server, is the server online?");
+            running = false;
         }
 
     }
@@ -45,76 +45,111 @@ public class Client {
     /**
      * Main
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Client client = new Client();
+        boolean correctInput;
         while (client.running) {
-            client.decodeCommands();
-            if(client.connectionHandler.readAscii()){
+            correctInput = false;
+            // print out incoming message
+            if (DEBUG) System.out.println("Reading Message");
+            if (client.connectionHandler.readAscii()) {
                 System.out.println(client.connectionHandler.getIncomingMessage());
             }
-        }
-    }
-
-    private void decodeCommands() throws IOException {
-        // Reading input
-        BufferedReader inputStreamReader = new BufferedReader(new InputStreamReader(System.in));
-        String inputCommands = inputStreamReader.readLine();
-        String[] commands = inputCommands.split("\\s+");
-
-        if (availableCommands.contains(commands[0].toUpperCase())) {
-            switch (commands[0].toUpperCase()) {
-                case "USER":
-                    if (!(connectionHandler.sendAscii("hello"))) {
-                        System.out.println("message did not send");
-                        closeConnection();
-                    }
-                    break;
-                case "ACCT":
-
-                    break;
-                case "PASS":
-
-                    break;
-                case "TYPE":
-
-                    break;
-                case "LIST":
-
-                    break;
-                case "CDIR":
-
-                    break;
-                case "KILL":
-
-                    break;
-                case "NAME":
-
-                    break;
-                case "TOBE":
-
-                    break;
-                case "DONE":
-                    break;
-                case "RETR":
-
-                    break;
-                case "SEND":
-
-                    break;
-                case "STOP":
-
-                    break;
-                case "STOR":
-
-                    break;
-                default:
-                    break;
+            // decode input
+            while(!correctInput){
+                if (DEBUG) System.out.println("Collecting commands");
+                correctInput = client.decodeCommands();
             }
-        } else {
-            System.out.println("Not a valid command, please choose from:");
-            System.out.println("USER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
+
         }
     }
+
+    /**
+     * main function that decodes what commands are entered and responds accordingly
+     * Reads the terminal (system.in) and runs appropriate method accordingly.
+     */
+    private boolean decodeCommands() {
+        try {
+            // Reading input
+            BufferedReader inputStreamReader = new BufferedReader(new InputStreamReader(System.in));
+            String inputCommands = inputStreamReader.readLine();
+            String[] commands = inputCommands.split("\\s+");
+            // Selecting which command to run
+            if (availableCommands.contains(commands[0].toUpperCase())) {
+                switch (commands[0].toUpperCase()) {
+                    case "USER":
+                        return user(commands);
+                    case "ACCT":
+
+                        break;
+                    case "PASS":
+
+                        break;
+                    case "TYPE":
+
+                        break;
+                    case "LIST":
+
+                        break;
+                    case "CDIR":
+
+                        break;
+                    case "KILL":
+
+                        break;
+                    case "NAME":
+
+                        break;
+                    case "TOBE":
+
+                        break;
+                    case "DONE":
+                        break;
+                    case "RETR":
+
+                        break;
+                    case "SEND":
+
+                        break;
+                    case "STOP":
+
+                        break;
+                    case "STOR":
+
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                System.out.println("Not a valid command, please choose from:");
+                System.out.println("USER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
+                return false;
+            }
+        } catch (IOException e) {
+            System.out.println("Can't read input from terminal, Should really never be here.");
+            closeConnection();
+        }
+        return true;
+    }
+
+    /**
+     * Sends User name over to the server.
+     * @param commands command line args
+     */
+    private boolean user(String[] commands) {
+        // check commands is exactly 2 fields.
+        if (commands.length != 2) {
+            System.out.println("USER command takes exactly 1 argument. Please try again");
+            return false;
+        }
+        // Send user credentials, closes connection if cannot connect
+        if (!(connectionHandler.sendAscii(commands[1]))) {
+            System.out.println("USER details did not send due to connection error");
+            closeConnection();
+        }
+        return true;
+    }
+
 
     /**
      * Closes stops the program and closes the connection safely.
@@ -123,6 +158,7 @@ public class Client {
         try {
             this.running = false;
             this.clientSocket.close();
+            System.out.println("Client Session Ended");
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Could not close connection");
