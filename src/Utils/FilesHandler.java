@@ -33,6 +33,14 @@ public class FilesHandler {
     }
 
     /**
+     * Gets the userInfo CSV, tries to find the fileName in the configs folder
+     * @return path to the user file
+     */
+    public Path getConfigFilePath(String fileName){
+        return Paths.get(configsFolder.toString(),fileName);
+    }
+
+    /**
      * Checks if file folder exists, creates the folder if it does not.
      * Used to store files for transfer.
      *
@@ -62,5 +70,7 @@ public class FilesHandler {
         }
         return true;
     }
+
+
 
 }
