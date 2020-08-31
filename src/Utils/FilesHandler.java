@@ -23,15 +23,18 @@ public class FilesHandler {
     public static void main(String[] args) {
         FilesHandler fh = new FilesHandler("Server/Files", "Server/Configs");
         //System.out.println(fh.listFiles());
-        System.out.println(fh.listFiles("V"));
-        fh.changeDir("~");
-        System.out.println(fh.getCurrentPath());
-        fh.changeDir("~/Folder1");
-        System.out.println(fh.getCurrentPath());
-        fh.changeDir("/Folder2");
-        System.out.println(fh.getCurrentPath());
-        fh.changeDir("C:\\rfc913\\Server\\Files\\Folder3");
-        System.out.println(fh.getCurrentPath());
+//        System.out.println(fh.listFiles("V"));
+//        fh.changeDir("~");
+//        System.out.println(fh.getCurrentPath());
+//        fh.changeDir("~/Folder1");
+//        System.out.println(fh.getCurrentPath());
+//        fh.changeDir("/Folder2");
+//        System.out.println(fh.getCurrentPath());
+//        fh.changeDir("C:\\rfc913\\Server\\Files\\Folder3");
+//        System.out.println(fh.getCurrentPath());
+        System.out.println(fh.fileExist("cat.png"));
+        System.out.println(fh.rename("cat1.png","cat2.png"));
+        System.out.println(fh.rename("cat2.png","cat2.png"));
     }
 
     /**
@@ -238,6 +241,25 @@ public class FilesHandler {
         }
     }
 
+    public boolean fileExist(String fileName) {
+        File file = new File(currentPath.toAbsolutePath() + File.separator + fileName);
+        return file.exists();
+    }
+
+    public String rename(String oldName, String newName) {
+        File oldFile = new File(currentPath.toAbsolutePath() + File.separator + oldName);
+        File newFile = new File(currentPath.toAbsolutePath() + File.separator + newName);
+
+        if (oldName.equals(newName)) {
+            return "-File wasn't renamed as new name is same as old name";
+        }
+        if (oldFile.renameTo(newFile)) {
+            return String.format("+%s renamed to %s",oldName,newName);
+        } else {
+            return "-File wasn't renamed because it's protected";
+        }
+
+    }
 
     public Path getCurrentPath() {
         return currentPath;

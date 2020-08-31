@@ -17,7 +17,7 @@ public class Client {
     private final static boolean DEBUG = false;
     // Available Commands
     private static final Set<String> availableCommands = Set.of(
-            "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR"
+            "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR", "TOBE"
     );
 
     // Server IP and Port
@@ -59,14 +59,14 @@ public class Client {
                 correctInput = client.decodeCommands();
             }
             // Send the command over
-            client.sendCommands();
+            if (client.running) client.sendCommands();
         }
         System.out.println("Client Session ended.");
     }
 
     private void displayMessage() {
         if (DEBUG) System.out.println("Waiting for incoming message");
-        if (connectionHandler.readAscii()) {
+        if (connectionHandler.readIncoming()) {
             System.out.println(connectionHandler.getIncomingMessage());
         } else {
             closeConnection();
@@ -101,13 +101,11 @@ public class Client {
                     case "KILL":
                         return kill(commands);
                     case "NAME":
-
-                        break;
+                        return name(commands);
                     case "TOBE":
-
-                        break;
+                        return tobe(commands);
                     case "DONE":
-                        break;
+                        return done(commands);
                     case "RETR":
 
                         break;
@@ -170,7 +168,7 @@ public class Client {
     private boolean user(String[] commands) {
         // check commands is exactly 2 fields.
         if (commands.length != 2) {
-            System.out.println("USER command takes exactly 1 argument. Please try again");
+            System.out.println("USER command format : USER <user name>");
             return false;
         }
         return true;
@@ -179,7 +177,7 @@ public class Client {
     private boolean acct(String[] commands) {
         // check commands is exactly 2 fields.
         if (commands.length != 2) {
-            System.out.println("ACCT command takes exactly 1 argument. Please try again");
+            System.out.println("ACCT command format : ACCT <account name>");
             return false;
         }
         return true;
@@ -188,7 +186,7 @@ public class Client {
     private boolean pass(String[] commands) {
         // check commands is exactly 2 fields.
         if (commands.length != 2) {
-            System.out.println("Pass command takes exactly 1 argument. Please try again");
+            System.out.println("PASS command format : PASS <password>");
             return false;
         }
         return true;
@@ -196,7 +194,7 @@ public class Client {
 
     private boolean type(String[] commands) {
         if (commands.length != 2) {
-            System.out.println("Type command takes exactly 1 argument. Please try again");
+            System.out.println("TYPE command format : TYPE { A | B | C }");
             return false;
         }
         return true;
@@ -204,7 +202,7 @@ public class Client {
 
     private boolean list(String[] commands) {
         if (commands.length != 2 && commands.length != 3) {
-            System.out.println("List command takes 1 or 2 arguments. Please try again.");
+            System.out.println("LIST command format : LIST { F | V } <directory-path>. check README for specific directory path syntax");
             return false;
         }
 
@@ -217,7 +215,7 @@ public class Client {
 
     private boolean cdir(String[] commands) {
         if (commands.length != 2) {
-            System.out.println("CDIR takes 1 argument. Please try again");
+            System.out.println("LIST command format : LIST { F | V } <directory-path> , check README for specific directory path syntax");
             return false;
         }
         return true;
@@ -225,9 +223,44 @@ public class Client {
 
     private boolean kill(String[] commands) {
         if (commands.length != 2) {
-            System.out.println("KILL takes 1 argument. Please try again");
+            System.out.println("KILL command format : KILL <file> (File has to be within currently directory)");
             return false;
         }
         return true;
     }
+
+    private boolean name(String[] commands) {
+        if (commands.length != 2) {
+            System.out.println("NAME command format : NAME <file> (File has to be within currently directory)");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean tobe(String[] commands) {
+        if (commands.length != 2) {
+            System.out.println("TOBE command format : TOBE <new file name>");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean done(String[] commands) {
+        if (commands.length != 1) {
+            System.out.println("DONE command format : DONE");
+            return false;
+        }
+        // send the DONE command and wait for a response
+        sendCommands();
+        if (connectionHandler.readIncoming()) {
+            String msg = connectionHandler.getIncomingMessage();
+            if (msg.charAt(0) == '+') {
+                System.out.println(msg);
+                closeConnection();
+            }
+        }
+        return true;
+    }
+
+
 }

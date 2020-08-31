@@ -32,7 +32,7 @@ public class ConnectionHandler {
      *
      * @return Boolean indicating if read has been successful, false if error with connection
      */
-    public boolean readAscii() {
+    public boolean readIncoming() {
         StringBuilder incomingMessage = new StringBuilder();
         int incomingChar;
         boolean finishedReading = false;

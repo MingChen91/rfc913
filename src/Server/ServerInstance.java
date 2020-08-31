@@ -16,13 +16,13 @@ public class ServerInstance implements Runnable {
     private static final Set<String> availableCommands = Set.of(
             "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR"
     );
-    private Socket connectionSocket;
+    private final Socket connectionSocket;
     private String responseCode;
     private String responseMessage;
     private ConnectionHandler connectionHandler;
-    private FilesHandler filesHandler;
-    private CredentialsHandler credentialsHandler;
-    private final boolean DEBUG = true;
+    private final FilesHandler filesHandler;
+    private final CredentialsHandler credentialsHandler;
+    private final boolean DEBUG = false;
     private String transferType = "B";
     private boolean running = true;
 
@@ -69,7 +69,7 @@ public class ServerInstance implements Runnable {
      */
     private void decodeCommands() {
         String[] commands;
-        if (connectionHandler.readAscii()) {
+        if (connectionHandler.readIncoming()) {
             if (DEBUG) System.out.println("message : " + connectionHandler.getIncomingMessage());
 
             commands = connectionHandler.getIncomingMessage().split("\\s+");
@@ -96,12 +96,10 @@ public class ServerInstance implements Runnable {
                     kill(commands[1]);
                     break;
                 case "NAME":
-
-                    break;
-                case "TOBE":
-
+                    name(commands[1]);
                     break;
                 case "DONE":
+                    done();
                     break;
                 case "RETR":
 
@@ -121,7 +119,6 @@ public class ServerInstance implements Runnable {
         } else {
             closeConnection();
         }
-        sendResponse();
     }
 
     /**
@@ -141,7 +138,7 @@ public class ServerInstance implements Runnable {
         try {
             this.running = false;
             this.connectionSocket.close();
-            System.out.println("Close Server instance");
+            System.out.println("Closing Server instance");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -168,6 +165,7 @@ public class ServerInstance implements Runnable {
                 responseMessage = user + " logged in";
             }
         }
+        sendResponse();
     }
 
     private void acct(String acct) {
@@ -186,6 +184,7 @@ public class ServerInstance implements Runnable {
                 responseMessage = "Account was ok or not needed. Skip the password.";
             }
         }
+        sendResponse();
     }
 
     private void pass(String pass) {
@@ -206,6 +205,7 @@ public class ServerInstance implements Runnable {
                 responseMessage = "Password is ok and you can begin file transfers.";
             }
         }
+        sendResponse();
     }
 
     // ******************
@@ -219,7 +219,7 @@ public class ServerInstance implements Runnable {
      * @param type
      */
     private void type(String type) {
-        if (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN) {
+        if (loggedIn()) {
             switch (type.toUpperCase()) {
                 case "A" -> {
                     transferType = "A";
@@ -245,13 +245,14 @@ public class ServerInstance implements Runnable {
             responseCode = "-";
             responseMessage = "You need to be logged in to use TYPE";
         }
+        sendResponse();
     }
 
     /**
      * @param commands
      */
     private void list(String[] commands) {
-        if (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN) {
+        if (loggedIn()) {
             if (commands.length == 1) {
                 // No dir, will list previous dir
                 responseMessage = filesHandler.listFiles(commands[0]);
@@ -269,11 +270,12 @@ public class ServerInstance implements Runnable {
             responseCode = "-";
             responseMessage = "You need to be logged in to use LIST";
         }
+        sendResponse();
     }
 
     private void cdir(String dir) {
         // Check if is logged in
-        if (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN) {
+        if (loggedIn()) {
             // See if change dir has been successful
             if (filesHandler.changeDir(dir)) {
                 responseCode = "!";
@@ -287,16 +289,63 @@ public class ServerInstance implements Runnable {
             responseCode = "-";
             responseMessage = "Cannot connect to directory because you are not logged in";
         }
+        sendResponse();
     }
 
-    private void kill(String fileName){
-        if (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN){
+    private void kill(String fileName) {
+        if (loggedIn()) {
             String resp = filesHandler.kill(fileName);
-            responseCode = resp.substring(0,0);
+            responseCode = resp.substring(0, 0);
             responseMessage = resp.substring(1);
         } else {
             responseCode = "-";
             responseMessage = "Cannot use kill because you're not logged in";
         }
+        sendResponse();
+    }
+
+    private void name(String fileName) {
+        if (loggedIn()) {
+            if (filesHandler.fileExist(fileName)) {
+                // check if specified file exists
+                responseCode = "+";
+                responseMessage = "File Exists";
+                sendResponse();
+                // wait for tobe with new file name
+                if (connectionHandler.readIncoming()) {
+                    String[] commands = connectionHandler.getIncomingMessage().split("\\s+");
+                    if (commands[0].toUpperCase().equals("TOBE")) {
+                        // attempt to change and send response
+                        String resp = filesHandler.rename(fileName, commands[1]);
+                        responseCode = resp.substring(0, 0);
+                        responseMessage = resp.substring(1);
+                    } else {
+                        responseCode = "-";
+                        responseMessage = "Name change aborted as you need to send TOBE with new file name";
+                    }
+                    sendResponse();
+                }
+            } else {
+                // cannot find file.
+                responseCode = "-";
+                responseMessage = String.format("File wasn't renamed because %s does not exist", fileName);
+                sendResponse();
+            }
+        } else {
+            // not logged in
+            responseCode = "-";
+            responseMessage = "You need to be logged in to use name";
+            sendResponse();
+        }
+    }
+
+    private void done(){
+        responseCode = "+";
+        responseMessage = "Thank you for using MCHE226 STFP service.";
+        sendResponse();
+        closeConnection();
+    }
+    private boolean loggedIn() {
+        return (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN);
     }
 }
