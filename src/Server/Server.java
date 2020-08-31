@@ -39,8 +39,7 @@ public class Server {
             welcomeSocket = new ServerSocket(PORT);
             System.out.println("Server listening on " + PORT);
         } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Error creating welcome socket.");
+            System.out.println("Error creating welcome socket. Do you have another instance running?");
         }
     }
 
@@ -51,7 +50,7 @@ public class Server {
         try {
             return welcomeSocket.accept();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Welcome Socket could not accept incoming connection. Maybe restart the server");
             return null;
         }
     }

@@ -66,7 +66,7 @@ public class ConnectionHandler {
      *
      * @return boolean for if sending is successful , false if error with connection
      */
-    public boolean sendAscii(String outgoingMessage) {
+    public boolean sendMessage(String outgoingMessage) {
         try {
             // Sends the message
             outConnection.writeBytes(outgoingMessage + '\0');

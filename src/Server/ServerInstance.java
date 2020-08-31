@@ -6,7 +6,6 @@ import Utils.FilesHandler;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.Set;
 
 /**
@@ -23,7 +22,7 @@ public class ServerInstance implements Runnable {
     private FilesHandler filesHandler;
     private CredentialsHandler credentialsHandler;
     private final boolean DEBUG = true;
-
+    private String transferType = "B";
     private boolean running = true;
 
     /**
@@ -55,7 +54,7 @@ public class ServerInstance implements Runnable {
         // Read input from Client
         System.out.println("Server instance started");
         // Send server online message
-        connectionHandler.sendAscii("+MCHE226 SFTP Service");
+        connectionHandler.sendMessage("+MCHE226 SFTP Service");
 
         while (running) {
             decodeCommands();
@@ -84,7 +83,7 @@ public class ServerInstance implements Runnable {
                     pass(commands[1]);
                     break;
                 case "TYPE":
-
+                    type(commands[1]);
                     break;
                 case "LIST":
 
@@ -128,7 +127,7 @@ public class ServerInstance implements Runnable {
      * Sends the response in ascii.
      */
     private void sendResponse() {
-        if (!(this.connectionHandler.sendAscii(responseCode + responseMessage))) {
+        if (!(this.connectionHandler.sendMessage(responseCode + responseMessage))) {
             closeConnection();
         }
     }
@@ -200,6 +199,39 @@ public class ServerInstance implements Runnable {
                 responseCode = "!";
                 responseMessage = "Password is ok and you can begin file transfers.";
             }
+        }
+    }
+
+    /**
+     * Used to select the transfer type
+     * @param type
+     */
+    private void type(String type) {
+        if (credentialsHandler.getState() == CredentialsHandler.State.LOGGED_IN) {
+            switch (type.toUpperCase()) {
+                case "A" -> {
+                    transferType = "A";
+                    responseMessage = "Using Ascii mode";
+                    responseCode = "+";
+                }
+                case "B" -> {
+                    transferType = "B";
+                    responseMessage = "Using Binary mode";
+                    responseCode = "+";
+                }
+                case "C" -> {
+                    transferType = "C";
+                    responseMessage = "Using Continuous mode";
+                    responseCode = "+";
+                }
+                default -> {
+                    responseCode = "-";
+                    responseMessage = "Type not valid";
+                }
+            }
+        } else {
+            responseCode = "-";
+            responseMessage = "You need to be logged in to use TYPE";
         }
     }
 }

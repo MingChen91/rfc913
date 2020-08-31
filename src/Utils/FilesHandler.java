@@ -1,8 +1,13 @@
 package Utils;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileOwnerAttributeView;
+
 
 /**
  * Utilities used for connecting with the IO streams and file IO
@@ -10,9 +15,12 @@ import java.nio.file.Paths;
 public class FilesHandler {
     private final Path filesFolder;
     private final Path configsFolder;
+    private Path currentPath;
 
     public static void main(String[] args) {
-        FilesHandler fh = new FilesHandler("Client/Files", "Client/Configs");
+        FilesHandler fh = new FilesHandler("Server/Files", "Server/Configs");
+        //System.out.println(fh.listFiles());
+        fh.listFiles();
     }
 
     /**
@@ -30,6 +38,7 @@ public class FilesHandler {
         } else {
             System.out.println("Files and Configs Folders located, ready to go");
         }
+        currentPath = this.filesFolder;
     }
 
     /**
@@ -72,5 +81,38 @@ public class FilesHandler {
     }
 
 
+    public String listFiles(){
+        String[] files;
+        StringBuilder sb = new StringBuilder();
+
+        File dir  = new File(String.valueOf(currentPath));
+        files = dir.list();
+
+        assert files != null;
+        for(String file : files){
+            try {
+                BasicFileAttributes attr = Files.readAttributes(Paths.get(String.valueOf(currentPath),file) , BasicFileAttributes.class);
+                System.out.println(file);
+                System.out.println("lastAccessTime : " + attr.lastAccessTime());
+                System.out.println("size:" + attr.size());
+
+                FileOwnerAttributeView attr2 = Files.getFileAttributeView(
+                        Paths.get(String.valueOf(currentPath),file),
+                        FileOwnerAttributeView.class);
+
+                System.out.println("owner:" + attr2.getOwner());
+                
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            sb.append(file).append("\r\n");
+        }
+        return sb.toString();
+    }
+
+
+    public String listFiles(String path) {
+        return "";
+    }
 
 }

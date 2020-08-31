@@ -5,7 +5,6 @@ import Utils.FilesHandler;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.Set;
 
 
@@ -15,7 +14,7 @@ import java.util.Set;
 public class Client {
     // Infinite loop boolean
     private boolean running = true;
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     // Available Commands
     private static final Set<String> availableCommands = Set.of(
             "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR"
@@ -94,8 +93,7 @@ public class Client {
                     case "PASS":
                         return pass(commands);
                     case "TYPE":
-
-                        break;
+                        return type(commands);
                     case "LIST":
 
                         break;
@@ -129,12 +127,11 @@ public class Client {
                         break;
                 }
             } else {
-                System.out.println("Not a valid command, please choose from:");
-                System.out.println("USER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
+                System.out.println("Not a valid command, please choose from:\nUSER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
                 return false;
             }
         } catch (IOException e) {
-            System.out.println("Can't read input from terminal, Should really never be here.");
+            System.out.println("Can't read input from terminal, ending session.");
             closeConnection();
         }
         return true;
@@ -158,7 +155,7 @@ public class Client {
      * Wrapper for sending commands. Closes connection if fails.
      */
     private void sendCommands() {
-        if (!(connectionHandler.sendAscii(inputCommands))) {
+        if (!(connectionHandler.sendMessage(inputCommands))) {
             closeConnection();
         }
     }
@@ -200,4 +197,11 @@ public class Client {
         return true;
     }
 
+    private boolean type(String[] commands) {
+        if (commands.length!=2){
+            System.out.println("Pass command takes exactly 1 argument. Please try again");
+            return false;
+        }
+        return true;
+    }
 }
