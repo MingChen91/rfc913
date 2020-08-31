@@ -33,8 +33,8 @@ public class FilesHandler {
 //        fh.changeDir("C:\\rfc913\\Server\\Files\\Folder3");
 //        System.out.println(fh.getCurrentPath());
         System.out.println(fh.fileExist("cat.png"));
-        System.out.println(fh.rename("cat1.png","cat2.png"));
-        System.out.println(fh.rename("cat2.png","cat2.png"));
+        System.out.println(fh.rename("cat1.png", "cat2.png"));
+        System.out.println(fh.rename("cat2.png", "cat2.png"));
     }
 
     /**
@@ -49,8 +49,6 @@ public class FilesHandler {
 
         if (!(createConfigsFolder() && createFilesFolder())) {
             System.out.println("Error locating / Creating folders. Check if you have privileges to write to the disk");
-        } else {
-            System.out.println("Files and Configs Folders located");
         }
         currentPath = this.filesFolder;
     }
@@ -254,7 +252,7 @@ public class FilesHandler {
             return "-File wasn't renamed as new name is same as old name";
         }
         if (oldFile.renameTo(newFile)) {
-            return String.format("+%s renamed to %s",oldName,newName);
+            return String.format("+%s renamed to %s", oldName, newName);
         } else {
             return "-File wasn't renamed because it's protected";
         }

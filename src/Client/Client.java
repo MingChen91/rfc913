@@ -48,18 +48,22 @@ public class Client {
      */
     public static void main(String[] args) {
         Client client = new Client();
+        client.run();
+    }
+
+    public void run() {
         boolean correctInput;
-        while (client.running) {
+        while (running) {
             correctInput = false;
             // print out incoming message
-            client.displayMessage();
+            displayMessage();
             // decode input
             while (!correctInput) {
                 if (DEBUG) System.out.println("Collecting commands");
-                correctInput = client.decodeCommands();
+                correctInput = getInput();
             }
             // Send the command over
-            if (client.running) client.sendCommands();
+            if (running) sendCommands();
         }
         System.out.println("Client Session ended.");
     }
@@ -77,7 +81,7 @@ public class Client {
      * main function that decodes what commands are entered and responds accordingly
      * Reads the terminal (system.in) and runs appropriate method accordingly.
      */
-    private boolean decodeCommands() {
+    private boolean getInput() {
         try {
             // Reading input
             BufferedReader inputStreamReader = new BufferedReader(new InputStreamReader(System.in));
