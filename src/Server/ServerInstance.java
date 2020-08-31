@@ -90,10 +90,10 @@ public class ServerInstance implements Runnable {
                     list(Arrays.copyOfRange(commands, 1, commands.length));
                     break;
                 case "CDIR":
-
+                    cdir(commands[1]);
                     break;
                 case "KILL":
-
+                    kill(commands[1]);
                     break;
                 case "NAME":
 
@@ -147,13 +147,13 @@ public class ServerInstance implements Runnable {
         }
     }
 
-    // *******************************************
+    // ******************************************
     // command functions
     // ******************************************
 
     private void user(String user) {
         credentialsHandler.checkUser(user);
-        switch (credentialsHandler.getState()) {
+        switch (credentialsHandler.getLoginState()) {
 
             case INIT -> {
                 responseCode = "-";
@@ -172,7 +172,7 @@ public class ServerInstance implements Runnable {
 
     private void acct(String acct) {
         credentialsHandler.checkAcct(acct);
-        switch (credentialsHandler.getState()) {
+        switch (credentialsHandler.getLoginState()) {
             case INIT, USER_FOUND, PASS_FOUND -> {
                 responseCode = "-";
                 responseMessage = "Invalid Account, try again";
@@ -189,9 +189,10 @@ public class ServerInstance implements Runnable {
     }
 
     private void pass(String pass) {
-        credentialsHandler.checkPass(pass);
-        switch (credentialsHandler.getState()) {
 
+        credentialsHandler.checkPass(pass);
+
+        switch (credentialsHandler.getLoginState()) {
             case INIT, USER_FOUND, ACCT_FOUND -> {
                 responseCode = "-";
                 responseMessage = "Wrong password, try again";
@@ -207,13 +208,18 @@ public class ServerInstance implements Runnable {
         }
     }
 
+    // ******************
+    // These functions need to be logged in
+    // ******************
+
+
     /**
      * Used to select the transfer type
      *
      * @param type
      */
     private void type(String type) {
-        if (credentialsHandler.getState() == CredentialsHandler.State.LOGGED_IN) {
+        if (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN) {
             switch (type.toUpperCase()) {
                 case "A" -> {
                     transferType = "A";
@@ -242,22 +248,55 @@ public class ServerInstance implements Runnable {
     }
 
     /**
-     *
      * @param commands
      */
     private void list(String[] commands) {
-        if (commands.length == 1) {
-            // No dir, will list previous dir
-            responseMessage = filesHandler.listFiles(commands[0]);
-        } else if (commands.length == 2) {
-            // dir included
-            responseMessage = filesHandler.listFiles(commands[0], commands[1]);
-        }
-        if (responseMessage != null) {
-            responseCode = "+";
+        if (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN) {
+            if (commands.length == 1) {
+                // No dir, will list previous dir
+                responseMessage = filesHandler.listFiles(commands[0]);
+            } else if (commands.length == 2) {
+                // dir included
+                responseMessage = filesHandler.listFiles(commands[0], commands[1]);
+            }
+            if (responseMessage != null) {
+                responseCode = "+";
+            } else {
+                responseMessage = "Directory invalid";
+                responseCode = "-";
+            }
         } else {
-            responseMessage = "Directory invalid";
             responseCode = "-";
+            responseMessage = "You need to be logged in to use LIST";
+        }
+    }
+
+    private void cdir(String dir) {
+        // Check if is logged in
+        if (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN) {
+            // See if change dir has been successful
+            if (filesHandler.changeDir(dir)) {
+                responseCode = "!";
+                responseMessage = "Changed working dir to ".concat(String.valueOf(filesHandler.getCurrentPath()));
+            } else {
+                responseCode = "-";
+                responseMessage = "Cannot connect to directory because directory does not exist or you do not have permission";
+            }
+        } else {
+            // todo more cdir vs login shit.
+            responseCode = "-";
+            responseMessage = "Cannot connect to directory because you are not logged in";
+        }
+    }
+
+    private void kill(String fileName){
+        if (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN){
+            String resp = filesHandler.kill(fileName);
+            responseCode = resp.substring(0,0);
+            responseMessage = resp.substring(1);
+        } else {
+            responseCode = "-";
+            responseMessage = "Cannot use kill because you're not logged in";
         }
     }
 }

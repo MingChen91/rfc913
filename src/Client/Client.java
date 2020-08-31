@@ -97,11 +97,9 @@ public class Client {
                     case "LIST":
                         return list(commands);
                     case "CDIR":
-
-                        break;
+                        return cdir(commands);
                     case "KILL":
-
-                        break;
+                        return kill(commands);
                     case "NAME":
 
                         break;
@@ -212,6 +210,22 @@ public class Client {
 
         if (!(commands[1].toUpperCase().equals("V") || commands[1].toUpperCase().equals("F"))) {
             System.out.println("Mode can only be V or F");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean cdir(String[] commands) {
+        if (commands.length != 2) {
+            System.out.println("CDIR takes 1 argument. Please try again");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean kill(String[] commands) {
+        if (commands.length != 2) {
+            System.out.println("KILL takes 1 argument. Please try again");
             return false;
         }
         return true;

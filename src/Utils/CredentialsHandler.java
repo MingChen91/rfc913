@@ -13,12 +13,14 @@ import java.util.List;
  * Used to open the credentials file perform functions related to the login credentials
  */
 public class CredentialsHandler {
-    public enum State {INIT, USER_FOUND, ACCT_FOUND, PASS_FOUND, LOGGED_IN}
+    public enum LoginState {INIT, USER_FOUND, ACCT_FOUND, PASS_FOUND, LOGGED_IN}
+
+    public enum CdirState {INIT, IN_PROGRESS, VERIFIED}
 
     private String user;
     private String acct;
     private String pass;
-    private State state;
+    private LoginState loginState;
     private final Path configFile;
     private final List<List<String>> userInfos;
 
@@ -27,7 +29,7 @@ public class CredentialsHandler {
         this.configFile = configFile;
         userInfos = new ArrayList<>();
         loadCredentials();
-        state = State.INIT;
+        loginState = LoginState.INIT;
     }
 
     public static void main(String[] args) {
@@ -35,13 +37,13 @@ public class CredentialsHandler {
         CredentialsHandler c = new CredentialsHandler(fh.getConfigFilePath("userInfo.csv"));
         c.checkUser("user3");
         c.displayCurrentUser();
-        System.out.println("state :" + c.getState());
+        System.out.println("state :" + c.getLoginState());
         c.checkAcct("account3");
-        System.out.println("state :" + c.getState());
+        System.out.println("state :" + c.getLoginState());
         c.checkPass("pass3");
-        System.out.println("state :" + c.getState());
+        System.out.println("state :" + c.getLoginState());
         c.checkUser("user1");
-        System.out.println("state :" + c.getState());
+        System.out.println("state :" + c.getLoginState());
     }
 
     /**
@@ -75,44 +77,43 @@ public class CredentialsHandler {
                 this.pass = userInfo.get(2);
                 // No password needed, logged in directly
                 if (this.acct.equals("") && this.pass.equals("")) {
-                    state = State.LOGGED_IN;
+                    loginState = LoginState.LOGGED_IN;
                 } else if (this.acct.equals("")) {
                     // no account needed, enter password next
-                    state = State.ACCT_FOUND;
+                    loginState = LoginState.ACCT_FOUND;
                 } else {
                     // enter account and password next
-                    state = State.USER_FOUND;
+                    loginState = LoginState.USER_FOUND;
                 }
                 return;
             }
         }
-        state = State.INIT;
+        loginState = LoginState.INIT;
     }
 
     public void checkAcct(String acct) {
-        if (state == State.USER_FOUND) {
+        if (loginState == LoginState.USER_FOUND) {
             if (this.acct.equals(acct)) {
-                state = State.ACCT_FOUND;
+                loginState = LoginState.ACCT_FOUND;
             }
-        } else if (state == State.PASS_FOUND) {
+        } else if (loginState == LoginState.PASS_FOUND) {
             if (this.acct.equals(acct)) {
-                state = State.LOGGED_IN;
-
+                loginState = LoginState.LOGGED_IN;
             }
         }
     }
 
     public void checkPass(String pass) {
         // account is already found, correct password => logs in
-        if (state == State.ACCT_FOUND) {
+        if (loginState == LoginState.ACCT_FOUND) {
             if (this.pass.equals(pass)) {
-                state = State.LOGGED_IN;
+                loginState = LoginState.LOGGED_IN;
             }
         }
         // haven't specified account but user and password is ok,
-        else if (state == State.USER_FOUND) {
+        else if (loginState == LoginState.USER_FOUND) {
             if (this.pass.equals(pass)) {
-                state = State.PASS_FOUND;
+                loginState = LoginState.PASS_FOUND;
             }
         }
     }
@@ -126,7 +127,12 @@ public class CredentialsHandler {
         System.out.println(pass);
     }
 
-    public State getState() {
-        return state;
+    /**
+     * Getter
+     * @return Current login state
+     */
+    public LoginState getLoginState() {
+        return loginState;
     }
+
 }

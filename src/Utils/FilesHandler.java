@@ -2,13 +2,14 @@ package Utils;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 
 
 /**
@@ -23,6 +24,14 @@ public class FilesHandler {
         FilesHandler fh = new FilesHandler("Server/Files", "Server/Configs");
         //System.out.println(fh.listFiles());
         System.out.println(fh.listFiles("V"));
+        fh.changeDir("~");
+        System.out.println(fh.getCurrentPath());
+        fh.changeDir("~/Folder1");
+        System.out.println(fh.getCurrentPath());
+        fh.changeDir("/Folder2");
+        System.out.println(fh.getCurrentPath());
+        fh.changeDir("C:\\rfc913\\Server\\Files\\Folder3");
+        System.out.println(fh.getCurrentPath());
     }
 
     /**
@@ -153,7 +162,6 @@ public class FilesHandler {
         } else {
             return null;
         }
-
     }
 
 
@@ -163,13 +171,75 @@ public class FilesHandler {
      * @return Null if no such dir exists, or
      */
     public String listFiles(String mode, String dir) {
-        File file = new File(dir);
         //Checks if it's a valid dir, if so ,changes the dir then lists all the files.
-        if (file.isDirectory()) {
-            currentPath = file.toPath();
+        if (changeDir(dir)) {
             return listFiles(mode);
         } else {
             return null;
         }
+    }
+
+    /**
+     * @param dir
+     * @return
+     */
+    public boolean changeDir(String dir) {
+        // Accounting for different systems
+        dir = dir.replace('\\', File.separatorChar);
+        dir = dir.replace('/', File.separatorChar);
+
+        if (dir.charAt(0) == '~') {
+            if (dir.length() == 1) {
+                // go to root folder
+                currentPath = filesFolder;
+                return true;
+            } else if (dir.charAt(1) == File.separatorChar) {
+                //relative to root folder
+                String newDir = currentPath.toAbsolutePath() + dir.substring(1);
+                System.out.println(newDir);
+                File f = new File(newDir);
+                if (f.isDirectory()) {
+                    currentPath = Paths.get(newDir);
+                    return true;
+                }
+            }
+        } else if (dir.charAt(0) == File.separatorChar) {
+            // Relative to current folder
+            String newDir = currentPath.toAbsolutePath() + File.separator + dir;
+            File f = new File(newDir);
+            if (f.isDirectory()) {
+                currentPath = Paths.get(newDir);
+                return true;
+            }
+        } else {
+            //Absolute navigation
+            File f = new File(dir);
+            // Cannot go above root folder
+            if (dir.compareTo(String.valueOf(filesFolder)) < 0) {
+                return false;
+            }
+            if (f.isDirectory()) {
+                currentPath = Paths.get(dir);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String kill(String fileName) {
+        Path fileToKill = new File(currentPath.toAbsolutePath() + File.separator + fileName).toPath();
+        try {
+            Files.delete(fileToKill);
+            return "+" + fileName + " deleted";
+        } catch (NoSuchFileException ex) {
+            return "-Not deleted because no file exists";
+        } catch (IOException e) {
+            return "-Not deleted because file is protected";
+        }
+    }
+
+
+    public Path getCurrentPath() {
+        return currentPath;
     }
 }
