@@ -6,6 +6,7 @@ import Utils.FilesHandler;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Set;
 
 /**
@@ -86,7 +87,7 @@ public class ServerInstance implements Runnable {
                     type(commands[1]);
                     break;
                 case "LIST":
-
+                    list(Arrays.copyOfRange(commands, 1, commands.length));
                     break;
                 case "CDIR":
 
@@ -195,6 +196,10 @@ public class ServerInstance implements Runnable {
                 responseCode = "-";
                 responseMessage = "Wrong password, try again";
             }
+            case PASS_FOUND -> {
+                responseCode = "+";
+                responseMessage = "Password ok but you haven't specified the account";
+            }
             case LOGGED_IN -> {
                 responseCode = "!";
                 responseMessage = "Password is ok and you can begin file transfers.";
@@ -204,6 +209,7 @@ public class ServerInstance implements Runnable {
 
     /**
      * Used to select the transfer type
+     *
      * @param type
      */
     private void type(String type) {
@@ -232,6 +238,26 @@ public class ServerInstance implements Runnable {
         } else {
             responseCode = "-";
             responseMessage = "You need to be logged in to use TYPE";
+        }
+    }
+
+    /**
+     *
+     * @param commands
+     */
+    private void list(String[] commands) {
+        if (commands.length == 1) {
+            // No dir, will list previous dir
+            responseMessage = filesHandler.listFiles(commands[0]);
+        } else if (commands.length == 2) {
+            // dir included
+            responseMessage = filesHandler.listFiles(commands[0], commands[1]);
+        }
+        if (responseMessage != null) {
+            responseCode = "+";
+        } else {
+            responseMessage = "Directory invalid";
+            responseCode = "-";
         }
     }
 }

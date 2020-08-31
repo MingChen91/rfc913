@@ -95,8 +95,7 @@ public class Client {
                     case "TYPE":
                         return type(commands);
                     case "LIST":
-
-                        break;
+                        return list(commands);
                     case "CDIR":
 
                         break;
@@ -198,8 +197,21 @@ public class Client {
     }
 
     private boolean type(String[] commands) {
-        if (commands.length!=2){
-            System.out.println("Pass command takes exactly 1 argument. Please try again");
+        if (commands.length != 2) {
+            System.out.println("Type command takes exactly 1 argument. Please try again");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean list(String[] commands) {
+        if (commands.length != 2 && commands.length != 3) {
+            System.out.println("List command takes 1 or 2 arguments. Please try again.");
+            return false;
+        }
+
+        if (!(commands[1].toUpperCase().equals("V") || commands[1].toUpperCase().equals("F"))) {
+            System.out.println("Mode can only be V or F");
             return false;
         }
         return true;
