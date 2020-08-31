@@ -10,7 +10,7 @@ import java.net.Socket;
  */
 public class Server {
     private static final String HOST = "localhost";
-    private static final int PORT = 115;
+    private static final int PORT = 6666;
     private ServerSocket welcomeSocket;
 
     /**
@@ -39,7 +39,7 @@ public class Server {
             welcomeSocket = new ServerSocket(PORT);
             System.out.println("Server listening on " + PORT);
         } catch (IOException e) {
-            System.out.println("Error creating welcome socket. Do you have another instance running?");
+            System.out.println("Error creating welcome socket. Is this socket available?");
         }
     }
 

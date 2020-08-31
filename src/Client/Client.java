@@ -22,7 +22,7 @@ public class Client {
 
     // Server IP and Port
     private static final String IP = "localhost";
-    private static final int PORT = 115;
+    private static final int PORT = 6666;
     private String inputCommands;
     // Sockets and IO streams
     private Socket clientSocket;
