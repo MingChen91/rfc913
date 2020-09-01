@@ -4,6 +4,7 @@ import Utils.ConnectionHandler;
 import Utils.CredentialsHandler;
 import Utils.FilesHandler;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
@@ -12,17 +13,17 @@ import java.util.Set;
 /**
  * This is a single instance of a server.
  */
+// todo change response code and message, and nested ifs and CDIR
 public class ServerInstance implements Runnable {
     private static final Set<String> availableCommands = Set.of(
             "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR"
     );
     private final Socket connectionSocket;
-    private String responseCode;
     private String responseMessage;
     private ConnectionHandler connectionHandler;
     private final FilesHandler filesHandler;
     private final CredentialsHandler credentialsHandler;
-    private final boolean DEBUG = false;
+    private final boolean DEBUG = true;
     private String transferType = "B";
     private boolean running = true;
 
@@ -102,7 +103,7 @@ public class ServerInstance implements Runnable {
                     done();
                     break;
                 case "RETR":
-
+                    retr(commands[1]);
                     break;
                 case "SEND":
 
@@ -125,7 +126,13 @@ public class ServerInstance implements Runnable {
      * Sends the response in ascii.
      */
     private void sendResponse() {
-        if (!(this.connectionHandler.sendMessage(responseCode + responseMessage))) {
+        if (!(this.connectionHandler.sendMessage(responseMessage))) {
+            closeConnection();
+        }
+    }
+
+    private void sendFile(File file) {
+        if (!(connectionHandler.sendFile(file))) {
             closeConnection();
         }
     }
@@ -153,16 +160,13 @@ public class ServerInstance implements Runnable {
         switch (credentialsHandler.getLoginState()) {
 
             case INIT -> {
-                responseCode = "-";
-                responseMessage = "Invalid user-id, try again";
+                responseMessage = "-Invalid user-id, try again";
             }
             case USER_FOUND, ACCT_FOUND, PASS_FOUND -> {
-                responseCode = "+";
-                responseMessage = "User-id valid, send account and password";
+                responseMessage = "+User-id valid, send account and password";
             }
             case LOGGED_IN -> {
-                responseCode = "!";
-                responseMessage = user + " logged in";
+                responseMessage = "!" + user + " logged in";
             }
         }
         sendResponse();
@@ -172,16 +176,13 @@ public class ServerInstance implements Runnable {
         credentialsHandler.checkAcct(acct);
         switch (credentialsHandler.getLoginState()) {
             case INIT, USER_FOUND, PASS_FOUND -> {
-                responseCode = "-";
-                responseMessage = "Invalid Account, try again";
+                responseMessage = "-Invalid Account, try again";
             }
             case ACCT_FOUND -> {
-                responseCode = "+";
-                responseMessage = "Account ok or not needed. Send your password next";
+                responseMessage = "+Account ok or not needed. Send your password next";
             }
             case LOGGED_IN -> {
-                responseCode = "!";
-                responseMessage = "Account was ok or not needed. Skip the password.";
+                responseMessage = "!Account was ok or not needed. Skip the password.";
             }
         }
         sendResponse();
@@ -193,16 +194,13 @@ public class ServerInstance implements Runnable {
 
         switch (credentialsHandler.getLoginState()) {
             case INIT, USER_FOUND, ACCT_FOUND -> {
-                responseCode = "-";
-                responseMessage = "Wrong password, try again";
+                responseMessage = "-Wrong password, try again";
             }
             case PASS_FOUND -> {
-                responseCode = "+";
-                responseMessage = "Password ok but you haven't specified the account";
+                responseMessage = "+Password ok but you haven't specified the account";
             }
             case LOGGED_IN -> {
-                responseCode = "!";
-                responseMessage = "Password is ok and you can begin file transfers.";
+                responseMessage = "!Password is ok and you can begin file transfers.";
             }
         }
         sendResponse();
@@ -223,27 +221,22 @@ public class ServerInstance implements Runnable {
             switch (type.toUpperCase()) {
                 case "A" -> {
                     transferType = "A";
-                    responseMessage = "Using Ascii mode";
-                    responseCode = "+";
+                    responseMessage = "+Using Ascii mode";
                 }
                 case "B" -> {
                     transferType = "B";
-                    responseMessage = "Using Binary mode";
-                    responseCode = "+";
+                    responseMessage = "+Using Binary mode";
                 }
                 case "C" -> {
                     transferType = "C";
-                    responseMessage = "Using Continuous mode";
-                    responseCode = "+";
+                    responseMessage = "+Using Continuous mode";
                 }
                 default -> {
-                    responseCode = "-";
-                    responseMessage = "Type not valid";
+                    responseMessage = "-Type not valid";
                 }
             }
         } else {
-            responseCode = "-";
-            responseMessage = "You need to be logged in to use TYPE";
+            responseMessage = "-You need to be logged in to use TYPE";
         }
         sendResponse();
     }
@@ -261,14 +254,12 @@ public class ServerInstance implements Runnable {
                 responseMessage = filesHandler.listFiles(commands[0], commands[1]);
             }
             if (responseMessage != null) {
-                responseCode = "+";
+                responseMessage = "+".concat(responseMessage);
             } else {
-                responseMessage = "Directory invalid";
-                responseCode = "-";
+                responseMessage = "-Directory invalid";
             }
         } else {
-            responseCode = "-";
-            responseMessage = "You need to be logged in to use LIST";
+            responseMessage = "-You need to be logged in to use LIST";
         }
         sendResponse();
     }
@@ -278,28 +269,22 @@ public class ServerInstance implements Runnable {
         if (loggedIn()) {
             // See if change dir has been successful
             if (filesHandler.changeDir(dir)) {
-                responseCode = "!";
-                responseMessage = "Changed working dir to ".concat(String.valueOf(filesHandler.getCurrentPath()));
+                responseMessage = "!Changed working dir to ".concat(String.valueOf(filesHandler.getCurrentPath()));
             } else {
-                responseCode = "-";
-                responseMessage = "Cannot connect to directory because directory does not exist or you do not have permission";
+                responseMessage = "-Cannot connect to directory because directory does not exist or you do not have permission";
             }
         } else {
             // todo more cdir vs login shit.
-            responseCode = "-";
-            responseMessage = "Cannot connect to directory because you are not logged in";
+            responseMessage = "-Cannot connect to directory because you are not logged in";
         }
         sendResponse();
     }
 
     private void kill(String fileName) {
         if (loggedIn()) {
-            String resp = filesHandler.kill(fileName);
-            responseCode = resp.substring(0, 0);
-            responseMessage = resp.substring(1);
+            responseMessage = filesHandler.kill(fileName);
         } else {
-            responseCode = "-";
-            responseMessage = "Cannot use kill because you're not logged in";
+            responseMessage = "-Cannot use kill because you're not logged in";
         }
         sendResponse();
     }
@@ -308,44 +293,88 @@ public class ServerInstance implements Runnable {
         if (loggedIn()) {
             if (filesHandler.fileExist(fileName)) {
                 // check if specified file exists
-                responseCode = "+";
-                responseMessage = "File Exists";
+                responseMessage = "+File Exists";
                 sendResponse();
                 // wait for tobe with new file name
                 if (connectionHandler.readIncoming()) {
                     String[] commands = connectionHandler.getIncomingMessage().split("\\s+");
                     if (commands[0].toUpperCase().equals("TOBE")) {
                         // attempt to change and send response
-                        String resp = filesHandler.rename(fileName, commands[1]);
-                        responseCode = resp.substring(0, 0);
-                        responseMessage = resp.substring(1);
+                        responseMessage = filesHandler.rename(fileName, commands[1]);
                     } else {
-                        responseCode = "-";
-                        responseMessage = "Name change aborted as you need to send TOBE with new file name";
+                        responseMessage = "-Name change aborted as you need to send TOBE with new file name";
                     }
                     sendResponse();
                 }
             } else {
                 // cannot find file.
-                responseCode = "-";
-                responseMessage = String.format("File wasn't renamed because %s does not exist", fileName);
+                responseMessage = String.format("-File wasn't renamed because %s does not exist", fileName);
                 sendResponse();
             }
         } else {
             // not logged in
-            responseCode = "-";
-            responseMessage = "You need to be logged in to use name";
+            responseMessage = "-You need to be logged in to use name";
             sendResponse();
         }
     }
 
-    private void done(){
-        responseCode = "+";
-        responseMessage = "Thank you for using MCHE226 STFP service.";
+    private void retr(String fileName) {
+        // Check if logged in
+        if (!loggedIn()) {
+            responseMessage = "-You need to be logged into use retr";
+            sendResponse();
+            return;
+        }
+        // Check if file exists
+        if (!filesHandler.fileExist(fileName)) {
+            responseMessage = "-File doesn't exist";
+            sendResponse();
+            return;
+        }
+        // Send file size over
+        File file = new File(filesHandler.getCurrentPath().toAbsolutePath() + File.separator + fileName);
+        responseMessage = String.valueOf(file.length());
+        if (DEBUG) System.out.println(responseMessage);
+        sendResponse();
+        if (DEBUG) System.out.println("response sent");
+
+        // Check if they want to accept file
+        String[] commands = getCommands();
+        switch (commands[0].toUpperCase()) {
+            case "SEND" -> {
+                responseMessage = "+Sending, this might take a while depending on size";
+                sendResponse();
+
+                sendFile(file);
+                responseMessage = "+Ok file sent";
+                sendResponse();
+            }
+            case "STOP" ->{
+                responseMessage = "+ok, RETR aborted";
+                sendResponse();
+            }default -> {
+                responseMessage = "-Unrecognised command, RETR aborted";
+                sendResponse();
+            }
+        }
+    }
+
+    private void done() {
+        responseMessage = "+Thank you for using MCHE226 STFP service.";
         sendResponse();
         closeConnection();
     }
+
     private boolean loggedIn() {
         return (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN);
+    }
+
+    private String[] getCommands() {
+        if (connectionHandler.readIncoming()) {
+            return connectionHandler.getIncomingMessage().split("\\s+");
+        } else {
+            closeConnection();
+            return new String[0];
+        }
     }
 }

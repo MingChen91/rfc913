@@ -1,6 +1,8 @@
 package Utils;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -206,7 +208,7 @@ public class FilesHandler {
             }
         } else if (dir.charAt(0) == File.separatorChar) {
             // Relative to current folder
-            String newDir = currentPath.toAbsolutePath() + File.separator + dir;
+            String newDir = currentPath.toAbsolutePath() + dir;
             File f = new File(newDir);
             if (f.isDirectory()) {
                 currentPath = Paths.get(newDir);
@@ -243,6 +245,9 @@ public class FilesHandler {
         File file = new File(currentPath.toAbsolutePath() + File.separator + fileName);
         return file.exists();
     }
+    public File generateFile(String fileName){
+        return new File(filesFolder.toAbsolutePath() + File.separator + fileName);
+    }
 
     public String rename(String oldName, String newName) {
         File oldFile = new File(currentPath.toAbsolutePath() + File.separator + oldName);
@@ -259,7 +264,9 @@ public class FilesHandler {
 
     }
 
+
     public Path getCurrentPath() {
         return currentPath;
     }
 }
+

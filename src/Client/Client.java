@@ -26,8 +26,10 @@ public class Client {
     private String inputCommands;
     // Sockets and IO streams
     private Socket clientSocket;
+    // Handlers
     private ConnectionHandler connectionHandler;
     private FilesHandler filesHandler;
+    private BufferedReader terminalReader;
 
 
     public Client() {
@@ -36,11 +38,11 @@ public class Client {
             clientSocket = new Socket(IP, PORT);
             connectionHandler = new ConnectionHandler(clientSocket);
             filesHandler = new FilesHandler("Client/Files", "Client/Configs");
+            terminalReader = new BufferedReader(new InputStreamReader(System.in));
         } catch (IOException e) {
             System.out.println("Error connecting to server, is the server online?");
             running = false;
         }
-
     }
 
     /**
@@ -53,14 +55,14 @@ public class Client {
 
     public void run() {
         boolean correctInput;
+
         while (running) {
             correctInput = false;
-            // print out incoming message
             displayMessage();
             // decode input
             while (!correctInput) {
                 if (DEBUG) System.out.println("Collecting commands");
-                correctInput = getInput();
+                correctInput = decodeTokens(tokenizeInput());
             }
             // Send the command over
             if (running) sendCommands();
@@ -77,61 +79,65 @@ public class Client {
         }
     }
 
+    private String retrieveMessage() {
+        if (connectionHandler.readIncoming()) {
+            return connectionHandler.getIncomingMessage();
+        } else {
+            closeConnection();
+            return "";
+        }
+    }
+
+
+    private String[] tokenizeInput() {
+        try {
+            inputCommands = terminalReader.readLine();
+            return inputCommands.split("\\s+");
+        } catch (IOException e) {
+            System.out.println("Can't read input from terminal, ending session.");
+            closeConnection();
+            return new String[0];
+        }
+    }
+
     /**
      * main function that decodes what commands are entered and responds accordingly
      * Reads the terminal (system.in) and runs appropriate method accordingly.
      */
-    private boolean getInput() {
-        try {
-            // Reading input
-            BufferedReader inputStreamReader = new BufferedReader(new InputStreamReader(System.in));
-            inputCommands = inputStreamReader.readLine();
-            String[] commands = inputCommands.split("\\s+");
-            // Selecting which command to run
-            if (availableCommands.contains(commands[0].toUpperCase())) {
-                switch (commands[0].toUpperCase()) {
-                    case "USER":
-                        return user(commands);
-                    case "ACCT":
-                        return acct(commands);
-                    case "PASS":
-                        return pass(commands);
-                    case "TYPE":
-                        return type(commands);
-                    case "LIST":
-                        return list(commands);
-                    case "CDIR":
-                        return cdir(commands);
-                    case "KILL":
-                        return kill(commands);
-                    case "NAME":
-                        return name(commands);
-                    case "TOBE":
-                        return tobe(commands);
-                    case "DONE":
-                        return done(commands);
-                    case "RETR":
-
-                        break;
-                    case "SEND":
-
-                        break;
-                    case "STOP":
-
-                        break;
-                    case "STOR":
-
-                        break;
-                    default:
-                        break;
-                }
-            } else {
-                System.out.println("Not a valid command, please choose from:\nUSER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
-                return false;
+    private boolean decodeTokens(String[] tokens) {
+        // Selecting which command to run
+        if (availableCommands.contains(tokens[0].toUpperCase())) {
+            switch (tokens[0].toUpperCase()) {
+                case "USER":
+                    return user(tokens);
+                case "ACCT":
+                    return acct(tokens);
+                case "PASS":
+                    return pass(tokens);
+                case "TYPE":
+                    return type(tokens);
+                case "LIST":
+                    return list(tokens);
+                case "CDIR":
+                    return cdir(tokens);
+                case "KILL":
+                    return kill(tokens);
+                case "NAME":
+                    return name(tokens);
+                case "TOBE":
+                    return tobe(tokens);
+                case "DONE":
+                    return done(tokens);
+                case "RETR":
+                    return retr(tokens);
+                case "STOR":
+                    break;
+                default:
+                    break;
             }
-        } catch (IOException e) {
-            System.out.println("Can't read input from terminal, ending session.");
-            closeConnection();
+        } else {
+            System.out.println("Not a valid command, please choose from:\nUSER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
+            return false;
         }
         return true;
     }
@@ -167,90 +173,90 @@ public class Client {
     /**
      * Sends User name over to the server.
      *
-     * @param commands command line args
+     * @param tokens command line args
      */
-    private boolean user(String[] commands) {
-        // check commands is exactly 2 fields.
-        if (commands.length != 2) {
+    private boolean user(String[] tokens) {
+        // check tokens is exactly 2 fields.
+        if (tokens.length != 2) {
             System.out.println("USER command format : USER <user name>");
             return false;
         }
         return true;
     }
 
-    private boolean acct(String[] commands) {
+    private boolean acct(String[] tokens) {
         // check commands is exactly 2 fields.
-        if (commands.length != 2) {
+        if (tokens.length != 2) {
             System.out.println("ACCT command format : ACCT <account name>");
             return false;
         }
         return true;
     }
 
-    private boolean pass(String[] commands) {
+    private boolean pass(String[] tokens) {
         // check commands is exactly 2 fields.
-        if (commands.length != 2) {
+        if (tokens.length != 2) {
             System.out.println("PASS command format : PASS <password>");
             return false;
         }
         return true;
     }
 
-    private boolean type(String[] commands) {
-        if (commands.length != 2) {
+    private boolean type(String[] tokens) {
+        if (tokens.length != 2) {
             System.out.println("TYPE command format : TYPE { A | B | C }");
             return false;
         }
         return true;
     }
 
-    private boolean list(String[] commands) {
-        if (commands.length != 2 && commands.length != 3) {
+    private boolean list(String[] tokens) {
+        if (tokens.length != 2 && tokens.length != 3) {
             System.out.println("LIST command format : LIST { F | V } <directory-path>. check README for specific directory path syntax");
             return false;
         }
 
-        if (!(commands[1].toUpperCase().equals("V") || commands[1].toUpperCase().equals("F"))) {
+        if (!(tokens[1].toUpperCase().equals("V") || tokens[1].toUpperCase().equals("F"))) {
             System.out.println("Mode can only be V or F");
             return false;
         }
         return true;
     }
 
-    private boolean cdir(String[] commands) {
-        if (commands.length != 2) {
+    private boolean cdir(String[] tokens) {
+        if (tokens.length != 2) {
             System.out.println("LIST command format : LIST { F | V } <directory-path> , check README for specific directory path syntax");
             return false;
         }
         return true;
     }
 
-    private boolean kill(String[] commands) {
-        if (commands.length != 2) {
+    private boolean kill(String[] tokens) {
+        if (tokens.length != 2) {
             System.out.println("KILL command format : KILL <file> (File has to be within currently directory)");
             return false;
         }
         return true;
     }
 
-    private boolean name(String[] commands) {
-        if (commands.length != 2) {
+    private boolean name(String[] tokens) {
+        if (tokens.length != 2) {
             System.out.println("NAME command format : NAME <file> (File has to be within currently directory)");
             return false;
         }
         return true;
     }
 
-    private boolean tobe(String[] commands) {
-        if (commands.length != 2) {
+    private boolean tobe(String[] tokens) {
+        if (tokens.length != 2) {
             System.out.println("TOBE command format : TOBE <new file name>");
             return false;
         }
         return true;
     }
 
-    private boolean done(String[] commands) {
-        if (commands.length != 1) {
+    private boolean done(String[] tokens) {
+        if (tokens.length != 1) {
             System.out.println("DONE command format : DONE");
             return false;
         }
@@ -266,5 +272,72 @@ public class Client {
         return true;
     }
 
+    private boolean retr(String[] tokens) {
+        if (tokens.length != 2) {
+            System.out.println("RETR command format : RETR <filename>");
+            return false;
+        }
 
+        String fileName = tokens[1];
+        // check if
+        if (fileName.contains(File.separator)) {
+            System.out.println("File name should not contain directories");
+            return false;
+        }
+        sendCommands();
+
+        // Either get fileSize or error message
+        String response = retrieveMessage();
+        // Error message
+        if (response.charAt(0) == '-') {
+            return true;
+        }
+
+
+        // Receive Message
+        System.out.println(response);
+        long fileSize = Long.parseLong(response);
+        File file = filesHandler.generateFile(fileName);
+
+        System.out.println("file size" + fileSize);
+        System.out.println(file);
+
+        // Get input should be stop or tobe
+        String[] tks;
+        boolean okInput = false;
+        while (!okInput) {
+
+            tks = tokenizeInput();
+
+            switch (tks[0].toUpperCase()) {
+                case "SEND" -> {
+                    if (tks.length == 1) {
+                        sendCommands();
+                        displayMessage();
+
+                        okInput = true;
+                        try {
+                            connectionHandler.receiveFile(file, fileSize, false);
+                        } catch (IOException e) {
+                            System.out.println("Cannot receive File, no access to hard drive?");
+                        }
+                    } else {
+                        System.out.println("SEND command format : SEND");
+                    }
+                }
+                case "STOP" -> {
+                    if (tks.length == 1) {
+                        sendCommands();
+                        okInput = true;
+                    } else {
+                        System.out.println("STOP command format : STOP");
+                    }
+                }
+                default -> {
+                    System.out.println("Only can accept SEND or STOP at this point.");
+                }
+            }
+        }
+        return true;
+    }
 }

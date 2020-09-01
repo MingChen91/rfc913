@@ -2,13 +2,18 @@ package Utils;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
 
 /**
  * Used for sending and receiving information from a connection socket. Attempts to resolve any errors
  */
 public class ConnectionHandler {
-    private final DataOutputStream outConnection;
-    private final BufferedReader inConnection;
+    private final DataOutputStream messageOut;
+    private final BufferedReader messageIn;
+
+    private final BufferedInputStream dataIn;
+    private final DataOutputStream dataOut;
+
     private String incomingMessage;
     // Debug flag
     private final static boolean STACKTRACE = false;
@@ -21,8 +26,12 @@ public class ConnectionHandler {
      * @throws IOException error if connection socket is bad
      */
     public ConnectionHandler(Socket connectionSocket) throws IOException {
-        this.outConnection = new DataOutputStream(connectionSocket.getOutputStream());
-        this.inConnection = new BufferedReader(new InputStreamReader((connectionSocket.getInputStream())));
+        // Messages
+        this.messageOut = new DataOutputStream(connectionSocket.getOutputStream());
+        this.messageIn = new BufferedReader(new InputStreamReader((connectionSocket.getInputStream())));
+        // Data
+        this.dataIn = new BufferedInputStream(connectionSocket.getInputStream());
+        this.dataOut = new DataOutputStream(connectionSocket.getOutputStream());
     }
 
 
@@ -40,7 +49,7 @@ public class ConnectionHandler {
         try {
             // Read and append char to string until null terminator is received
             while (!finishedReading) {
-                incomingChar = inConnection.read();
+                incomingChar = messageIn.read();
                 if ((char) incomingChar == '\0') {
                     if (incomingMessage.length() > 0) {
                         finishedReading = true;
@@ -69,7 +78,7 @@ public class ConnectionHandler {
     public boolean sendMessage(String outgoingMessage) {
         try {
             // Sends the message
-            outConnection.writeBytes(outgoingMessage + '\0');
+            messageOut.writeBytes(outgoingMessage + '\0');
             return true;
         } catch (IOException e) {
             // Catches connection error
@@ -87,5 +96,31 @@ public class ConnectionHandler {
     public String getIncomingMessage() {
         return this.incomingMessage;
     }
+
+    public boolean sendFile(File file) {
+        // Declare byte buffer the size of the file
+        try {
+            byte[] bArray = Files.readAllBytes(file.toPath());
+            // Send all the bytes
+            dataOut.write(bArray, 0, bArray.length);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public void receiveFile(File file, long fileSize, boolean overWrite) throws IOException {
+        System.out.println("in receive file");
+        System.out.println(file);
+        System.out.println(fileSize);
+
+        // Output stream to write file to
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file, overWrite));
+        for (int i = 0; i < fileSize; i++) {
+            bos.write(dataIn.read());
+        }
+        bos.close();
+    }
+
 
 }
