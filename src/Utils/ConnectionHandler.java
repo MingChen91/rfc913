@@ -15,8 +15,6 @@ public class ConnectionHandler {
     private final DataOutputStream dataOut;
 
     private String incomingMessage;
-    // Debug flag
-    private final static boolean STACKTRACE = false;
 
 
     /**
@@ -26,12 +24,16 @@ public class ConnectionHandler {
      * @throws IOException error if connection socket is bad
      */
     public ConnectionHandler(Socket connectionSocket) throws IOException {
-        // Messages
-        this.messageOut = new DataOutputStream(connectionSocket.getOutputStream());
-        this.messageIn = new BufferedReader(new InputStreamReader((connectionSocket.getInputStream())));
-        // Data
-        this.dataIn = new BufferedInputStream(connectionSocket.getInputStream());
-        this.dataOut = new DataOutputStream(connectionSocket.getOutputStream());
+        try {
+            // Messages
+            this.messageOut = new DataOutputStream(connectionSocket.getOutputStream());
+            this.messageIn = new BufferedReader(new InputStreamReader((connectionSocket.getInputStream())));
+            // Data
+            this.dataIn = new BufferedInputStream(connectionSocket.getInputStream());
+            this.dataOut = new DataOutputStream(connectionSocket.getOutputStream());
+        } catch (IOException e) {
+            throw new IOException("Cannot start connection handler. Port or Socket is occupied");
+        }
     }
 
 
@@ -63,7 +65,6 @@ public class ConnectionHandler {
             return true;
         } catch (IOException e) {
             // Catching error when trying to read, and close connection
-            if (STACKTRACE) e.printStackTrace();
             System.out.println("Error reading from socket. Socket will be closed");
             return false;
         }
@@ -82,7 +83,6 @@ public class ConnectionHandler {
             return true;
         } catch (IOException e) {
             // Catches connection error
-            if (STACKTRACE) e.printStackTrace();
             System.out.println("Error sending Message. Socket will be closed");
             return false;
         }
@@ -97,9 +97,20 @@ public class ConnectionHandler {
         return this.incomingMessage;
     }
 
-    public boolean sendFile(File file) {
+    /**
+     * Used to send a file over the data connection
+     *
+     * @param file         file to send
+     * @param transferType transfer type , a b or c
+     * @return True if send ok, false if could not read file.
+     */
+    public boolean sendFile(File file, String transferType) {
         // Declare byte buffer the size of the file
         try {
+            if (!(transferType.equals("A") || transferType.equals("B") || transferType.equals("C"))) {
+                return false;
+            }
+            // Convert file to bytes
             byte[] bArray = Files.readAllBytes(file.toPath());
             // Send all the bytes
             dataOut.write(bArray, 0, bArray.length);
@@ -109,6 +120,14 @@ public class ConnectionHandler {
         }
     }
 
+    /**
+     * Used to receive a file over the data connection
+     *
+     * @param file     Where to save the incoming file
+     * @param fileSize size of incoming form
+     * @param append   Append or Overwrite?
+     * @throws IOException Could not save to disk
+     */
     public void receiveFile(File file, long fileSize, boolean append) throws IOException {
         // Output stream to write file to
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file, append));

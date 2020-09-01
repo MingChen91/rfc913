@@ -1,7 +1,6 @@
 package Utils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,48 +10,31 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 
 
 /**
- * Utilities used for connecting with the IO streams and file IO
+ * Used for navigating Directories for both server and client
  */
 public class FilesHandler {
-    private final Path filesFolder;
-    private final Path configsFolder;
+    private final Path filesPath;
+    private final Path configsPath;
     private Path currentPath;
 
-    public static void main(String[] args) {
-        FilesHandler fh = new FilesHandler("Server/Files", "Server/Configs");
-        //System.out.println(fh.listFiles());
-//        System.out.println(fh.listFiles("V"));
-//        fh.changeDir("~");
-//        System.out.println(fh.getCurrentPath());
-//        fh.changeDir("~/Folder1");
-//        System.out.println(fh.getCurrentPath());
-//        fh.changeDir("/Folder2");
-//        System.out.println(fh.getCurrentPath());
-//        fh.changeDir("C:\\rfc913\\Server\\Files\\Folder3");
-//        System.out.println(fh.getCurrentPath());
-        System.out.println(fh.fileExist("cat.png"));
-        System.out.println(fh.rename("cat1.png", "cat2.png"));
-        System.out.println(fh.rename("cat2.png", "cat2.png"));
-    }
 
     /**
      * Sets the folder paths for files and configs folder. Relative to the root direct of java files
      *
-     * @param filesFolder   string representation of where filesFolder should be.
-     * @param configsFolder string representation of where configsFolder should be.
+     * @param filesFolder string representation of where files folder should be.
+     * @param configsPath string representation of where configs folder should be.
      */
-    public FilesHandler(String filesFolder, String configsFolder) {
-        this.filesFolder = Paths.get(filesFolder).toAbsolutePath();
-        this.configsFolder = Paths.get(configsFolder).toAbsolutePath();
+    public FilesHandler(String filesFolder, String configsPath) {
+        this.filesPath = Paths.get(filesFolder).toAbsolutePath();
+        this.configsPath = Paths.get(configsPath).toAbsolutePath();
 
         if (!(createConfigsFolder() && createFilesFolder())) {
             System.out.println("Error locating / Creating folders. Check if you have privileges to write to the disk");
         }
-        currentPath = this.filesFolder;
+        currentPath = this.filesPath;
     }
 
     /**
@@ -61,8 +43,9 @@ public class FilesHandler {
      * @return path to the user file
      */
     public Path getConfigFilePath(String fileName) {
-        return Paths.get(configsFolder.toString(), fileName);
+        return Paths.get(configsPath.toString(), fileName);
     }
+
 
     /**
      * Checks if file folder exists, creates the folder if it does not.
@@ -71,7 +54,7 @@ public class FilesHandler {
      * @return Returns true if a new folder is created, or folder already exists, false if error during folder creation
      */
     private boolean createFilesFolder() {
-        File ff = new File(String.valueOf(filesFolder));
+        File ff = new File(String.valueOf(filesPath));
         if (!ff.exists()) {
             // Creates folder if not exist
             return ff.mkdirs();
@@ -87,7 +70,7 @@ public class FilesHandler {
      * @return Returns true if a new folder is created, or folder already exists, false if error during folder creation
      */
     private boolean createConfigsFolder() {
-        File cf = new File(String.valueOf(configsFolder));
+        File cf = new File(String.valueOf(configsPath));
         if (!cf.exists()) {
             // Creates folder if not exist
             return cf.mkdirs();
@@ -97,12 +80,12 @@ public class FilesHandler {
 
 
     /**
-     * List files
+     * List files in current directory
      *
-     * @param mode
-     * @return
+     * @param mode V for verbose, F for simple Files
+     * @return Ascii table of files in the directory.
      */
-    public String listFiles(String mode) {
+    public String listFiles(String mode) throws FileNotFoundException {
         // String builder for building the response
         StringBuilder sb = new StringBuilder();
 
@@ -110,126 +93,132 @@ public class FilesHandler {
         File dir = new File(String.valueOf(currentPath)); // no dir , use last active
         File[] files;
         files = dir.listFiles();
-        if (files != null) {
-            // Display current path
-            sb.append(currentPath).append("\r\n");
-            if (mode.toUpperCase().equals("V")) {
-                // Attributes
-                String fileName = "FileName";
-                String modifiedTime = "ModifiedTime";
-                String size = "Size(B)";
-                String owner = "Owner";
-                String R = "R";
-                String W = "W";
-                String X = "X";
-                // Date Format
-                SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy kk:mm");
-                sb.append(String.format("| %-30.30s | %-20.20s | %-10.10s | %-20.20s | %1s%1s%1s |\r\n", fileName, modifiedTime, size, owner, R, W, X));
-                sb.append("-".repeat(99)).append("\r\n");
-                //Loop through all the files in the directory listing properties
-                for (File file : files) {
-                    try {
-                        // Fetch attributes
-                        BasicFileAttributes attr = Files.readAttributes(Paths.get(String.valueOf(file)), BasicFileAttributes.class);
-                        FileOwnerAttributeView attr2 = Files.getFileAttributeView(Paths.get(String.valueOf(file)), FileOwnerAttributeView.class);
-                        // Format  attributes into string
-                        fileName = file.getName();
-                        if (file.isDirectory()) fileName += "/.."; // add /.. if its a folder
-                        modifiedTime = df.format(file.lastModified());
-                        size = Long.toString(attr.size());
-                        owner = attr2.getOwner().getName();
-                        R = Files.isReadable(file.toPath()) ? "R" : "-";
-                        W = Files.isWritable(file.toPath()) ? "W" : "-";
-                        X = Files.isExecutable(file.toPath()) ? "X" : "-";
-                        // Append to string
-                        sb.append(String.format("| %-30.30s | %-20.20s | %-10.10s | %-20.20s | %1s%1s%1s |\r\n", fileName, modifiedTime, size, owner, R, W, X));
-                    } catch (IOException e) {
-                        fileName = file.getName();
-                        sb.append(String.format("|%-30.30s |%s", fileName, "Access denied\r\n"));
-                    }
-                }
-            } else if (mode.toUpperCase().equals("F")) {
-                // Title bar
-                sb.append(String.format("| %-30.30s |", "FileName")).append("\r\n");
-                sb.append("-".repeat(34)).append("\r\n");
-                // Loop through and display file names.
-                for (File file : files) {
-                    String fileName;
+        if (files == null) {
+            throw new FileNotFoundException("-Directory invalid");
+        }
+        // Display current path
+        sb.append("+").append(currentPath).append("\r\n");
+        // Verbose Mode
+        if (mode.toUpperCase().equals("V")) {
+            // Attributes
+            String fileName = "FileName";
+            String modifiedTime = "ModifiedTime";
+            String size = "Size(B)";
+            String owner = "Owner";
+            String R = "R";
+            String W = "W";
+            String X = "X";
+            // Date Format
+            SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy kk:mm");
+            sb.append(String.format("| %-30.30s | %-20.20s | %-10.10s | %-20.20s | %1s%1s%1s |\r\n", fileName, modifiedTime, size, owner, R, W, X));
+            sb.append("-".repeat(99)).append("\r\n");
+            //Loop through all the files in the directory listing properties
+            for (File file : files) {
+                try {
+                    // Fetch attributes
+                    BasicFileAttributes attr = Files.readAttributes(Paths.get(String.valueOf(file)), BasicFileAttributes.class);
+                    FileOwnerAttributeView attr2 = Files.getFileAttributeView(Paths.get(String.valueOf(file)), FileOwnerAttributeView.class);
+                    // Format  attributes into string
                     fileName = file.getName();
-                    // append /.. if its a folder
-                    if (file.isDirectory()) fileName += "/..";
-                    sb.append(String.format("| %-30.30s |", fileName)).append("\r\n");
+                    if (file.isDirectory()) fileName += "/.."; // add /.. if its a folder
+                    modifiedTime = df.format(file.lastModified());
+                    size = Long.toString(attr.size());
+                    owner = attr2.getOwner().getName();
+                    R = Files.isReadable(file.toPath()) ? "R" : "-";
+                    W = Files.isWritable(file.toPath()) ? "W" : "-";
+                    X = Files.isExecutable(file.toPath()) ? "X" : "-";
+                    // Append to string
+                    sb.append(String.format("| %-30.30s | %-20.20s | %-10.10s | %-20.20s | %1s%1s%1s |\r\n", fileName, modifiedTime, size, owner, R, W, X));
+                } catch (IOException e) {
+                    fileName = file.getName();
+                    sb.append(String.format("|%-30.30s |%s", fileName, "Access denied\r\n"));
                 }
             }
-            return sb.toString();
-        } else {
-            return null;
         }
+        // Standard Mode
+        else if (mode.toUpperCase().equals("F")) {
+            // Title bar
+            sb.append(String.format("| %-30.30s |", "FileName")).append("\r\n");
+            sb.append("-".repeat(34)).append("\r\n");
+            // Loop through and display file names.
+            for (File file : files) {
+                String fileName;
+                fileName = file.getName();
+                // append /.. if its a folder
+                if (file.isDirectory()) fileName += "/..";
+                sb.append(String.format("| %-30.30s |", fileName)).append("\r\n");
+            }
+        }
+        return sb.toString();
     }
 
 
     /**
+     * Overload version of List files, also tries to change directories first.
+     *
      * @param mode Mode of list, either F or V
      * @param dir  Attempted to list this dir
      * @return Null if no such dir exists, or
      */
-    public String listFiles(String mode, String dir) {
+    public String listFiles(String mode, String dir) throws FileNotFoundException {
         //Checks if it's a valid dir, if so ,changes the dir then lists all the files.
         if (changeDir(dir)) {
             return listFiles(mode);
-        } else {
-            return null;
         }
+        // Invalid dir
+        return "-Directory invalid";
     }
 
     /**
-     * @param dir
-     * @return
+     * Checks the current path by navigating folders.
+     *
+     * @param dir string representation of folder to change to
+     * @return true if changed.
      */
     public boolean changeDir(String dir) {
         // Accounting for different systems
         dir = dir.replace('\\', File.separatorChar);
         dir = dir.replace('/', File.separatorChar);
+        //
+        String newDir;
+        File f;
 
-        if (dir.charAt(0) == '~') {
-            if (dir.length() == 1) {
-                // go to root folder
-                currentPath = filesFolder;
-                return true;
-            } else if (dir.charAt(1) == File.separatorChar) {
-                //relative to root folder
-                String newDir = currentPath.toAbsolutePath() + dir.substring(1);
-                System.out.println(newDir);
-                File f = new File(newDir);
-                if (f.isDirectory()) {
-                    currentPath = Paths.get(newDir);
-                    return true;
-                }
-            }
-        } else if (dir.charAt(0) == File.separatorChar) {
-            // Relative to current folder
-            String newDir = currentPath.toAbsolutePath() + dir;
-            File f = new File(newDir);
+
+        if ((dir.charAt(0) == '~') && (dir.length() == 1)) {
+            // go to default folder
+            currentPath = filesPath;
+            return true;
+        } else if (dir.equals("..")) {
+            // Go up a level
+            currentPath = currentPath.getParent();
+            return true;
+        } else if (dir.charAt(0) == '@') {
+            // absolute path
+            newDir = dir.substring(1);
+            f = new File(newDir);
             if (f.isDirectory()) {
                 currentPath = Paths.get(newDir);
                 return true;
             }
         } else {
-            //Absolute navigation
-            File f = new File(dir);
-            // Cannot go above root folder
-            if (dir.compareTo(String.valueOf(filesFolder)) < 0) {
-                return false;
-            }
+            // Relative to current folder
+            newDir = currentPath.toAbsolutePath() + File.separator + dir;
+            f = new File(newDir);
             if (f.isDirectory()) {
-                currentPath = Paths.get(dir);
+                currentPath = Paths.get(newDir);
                 return true;
             }
         }
         return false;
     }
 
-    public String kill(String fileName) {
+    /**
+     * Deletes a file in the current folder
+     *
+     * @param fileName file to delete
+     * @return Message about whether deleted successfully
+     */
+    public String delete(String fileName) {
         Path fileToKill = new File(currentPath.toAbsolutePath() + File.separator + fileName).toPath();
         try {
             Files.delete(fileToKill);
@@ -241,14 +230,13 @@ public class FilesHandler {
         }
     }
 
-    public boolean fileExist(String fileName) {
-        File file = new File(currentPath.toAbsolutePath() + File.separator + fileName);
-        return file.exists();
-    }
-    public File generateReceiveFile(String fileName){
-        return new File(filesFolder.toAbsolutePath() + File.separator + fileName);
-    }
-
+    /**
+     * Used to rename a file
+     *
+     * @param oldName old name of file
+     * @param newName new name of file
+     * @return Message about if rename was sucessful
+     */
     public String rename(String oldName, String newName) {
         File oldFile = new File(currentPath.toAbsolutePath() + File.separator + oldName);
         File newFile = new File(currentPath.toAbsolutePath() + File.separator + newName);
@@ -261,10 +249,36 @@ public class FilesHandler {
         } else {
             return "-File wasn't renamed because it's protected";
         }
-
     }
 
 
+    /**
+     * Checks if a file exists
+     *
+     * @param fileName String of file name
+     * @return True if file exists.
+     */
+    public boolean fileExist(String fileName) {
+        File file = new File(currentPath.toAbsolutePath() + File.separator + fileName);
+        return file.exists();
+    }
+
+    /**
+     * Generates the "File" class file in the receiving folder.
+     *
+     * @param fileName name of file
+     * @return File object
+     */
+    public File generateReceiveFile(String fileName) {
+        return new File(filesPath.toAbsolutePath() + File.separator + fileName);
+    }
+
+
+    /**
+     * Gets the current path
+     *
+     * @return Current path
+     */
     public Path getCurrentPath() {
         return currentPath;
     }

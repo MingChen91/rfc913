@@ -15,9 +15,6 @@ import java.util.List;
 public class CredentialsHandler {
     public enum LoginState {INIT, USER_FOUND, ACCT_FOUND, PASS_FOUND, LOGGED_IN}
 
-    public enum CdirState {INIT, IN_PROGRESS, VERIFIED}
-
-    private String user;
     private String acct;
     private String pass;
     private LoginState loginState;
@@ -25,54 +22,48 @@ public class CredentialsHandler {
     private final List<List<String>> userInfos;
 
 
-    public CredentialsHandler(Path configFile) {
-        this.configFile = configFile;
-        userInfos = new ArrayList<>();
-        loadCredentials();
-        loginState = LoginState.INIT;
+    /**
+     * Constructor needs the path to the config file.
+     *
+     * @param configFile where the config file for user details is located
+     */
+    public CredentialsHandler(Path configFile) throws IOException {
+        try {
+            this.configFile = configFile;
+            userInfos = new ArrayList<>();
+            loadCredentials();
+            loginState = LoginState.INIT;
+        } catch (IOException e) {
+            throw new IOException("Could not load userInfo.csv for login credentials");
+        }
     }
 
-    public static void main(String[] args) {
-        FilesHandler fh = new FilesHandler("Server/Files", "Server/Configs");
-        CredentialsHandler c = new CredentialsHandler(fh.getConfigFilePath("userInfo.csv"));
-        c.checkUser("user3");
-        c.displayCurrentUser();
-        System.out.println("state :" + c.getLoginState());
-        c.checkAcct("account3");
-        System.out.println("state :" + c.getLoginState());
-        c.checkPass("pass3");
-        System.out.println("state :" + c.getLoginState());
-        c.checkUser("user1");
-        System.out.println("state :" + c.getLoginState());
-    }
 
     /**
-     * Loads the credentials file into an 2d array list of strings.
+     * Loads the credentials csv
+     *
+     * @throws IOException Config file not found or could not read form it
      */
-    public void loadCredentials() {
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(String.valueOf(configFile)));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] values = line.split(",", -1); // -1 limit enables include empty strings
-                userInfos.add(Arrays.asList(values));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void loadCredentials() throws IOException {
+
+        BufferedReader br = new BufferedReader(new FileReader(String.valueOf(configFile)));
+        String line;
+        while ((line = br.readLine()) != null) {
+            String[] values = line.split(",", -1); // -1 limit enables include empty strings
+            userInfos.add(Arrays.asList(values));
         }
-        //System.out.println(userInfos);
+
     }
 
     /**
      * Finds if the user exists in the config file
+     * Updates the state loginState
      *
      * @param user user name
-     * @return boolean for if the user is found. When found initialise user params in the class
      */
     public void checkUser(String user) {
         for (List<String> userInfo : userInfos) {
             if (userInfo.get(0).equals(user)) {
-                this.user = userInfo.get(0);
                 this.acct = userInfo.get(1);
                 this.pass = userInfo.get(2);
                 // No password needed, logged in directly
@@ -91,18 +82,32 @@ public class CredentialsHandler {
         loginState = LoginState.INIT;
     }
 
+    /**
+     * Checks if the account matches the current user's account
+     * Updates the state loginState
+     *
+     * @param acct account name
+     */
     public void checkAcct(String acct) {
         if (loginState == LoginState.USER_FOUND) {
+            // already found user
             if (this.acct.equals(acct)) {
                 loginState = LoginState.ACCT_FOUND;
             }
         } else if (loginState == LoginState.PASS_FOUND) {
+            // already matched pass
             if (this.acct.equals(acct)) {
                 loginState = LoginState.LOGGED_IN;
             }
         }
     }
 
+    /**
+     * Checks if the password matches the current user's password
+     * Updates the state loginState
+     *
+     * @param pass password
+     */
     public void checkPass(String pass) {
         // account is already found, correct password => logs in
         if (loginState == LoginState.ACCT_FOUND) {
@@ -118,21 +123,13 @@ public class CredentialsHandler {
         }
     }
 
-    /**
-     * displays the current users info
-     */
-    public void displayCurrentUser() {
-        System.out.println(user);
-        System.out.println(acct);
-        System.out.println(pass);
-    }
 
     /**
-     * Getter
+     * Getter for current login state.
+     *
      * @return Current login state
      */
     public LoginState getLoginState() {
         return loginState;
     }
-
 }

@@ -359,7 +359,7 @@ public class Client {
      * @return True if exited successfully, false if something wrong with command entered.
      */
     private boolean retr(String[] tokens) {
-        // Checking tokens lengh
+        // Checking tokens length
         if (tokens.length != 2) {
             System.out.println("RETR command format : RETR <filename>");
             return false;

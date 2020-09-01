@@ -5,26 +5,30 @@ import Utils.CredentialsHandler;
 import Utils.FilesHandler;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Set;
 
+// todo and nested ifs and CDIR
+
 /**
  * This is a single instance of a server.
  */
-// todo change response code and message, and nested ifs and CDIR
 public class ServerInstance implements Runnable {
     private static final Set<String> availableCommands = Set.of(
             "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR"
     );
+    // Sockets
     private final Socket connectionSocket;
-    private String responseMessage;
+    // Handlers
     private ConnectionHandler connectionHandler;
+    private CredentialsHandler credentialsHandler;
     private final FilesHandler filesHandler;
-    private final CredentialsHandler credentialsHandler;
-    private final boolean DEBUG = true;
+    private String responseMessage;
     private String transferType = "B";
+    // Indicating Server is running
     private boolean running = true;
 
     /**
@@ -35,15 +39,18 @@ public class ServerInstance implements Runnable {
      * @param connectionSocket socket allocated to this instance of server from the welcome socket
      */
     public ServerInstance(Socket connectionSocket) {
+        // Socket
         this.connectionSocket = connectionSocket;
+        // Files handler
         this.filesHandler = new FilesHandler("Server/Files", "Server/Configs");
+        // Connections handler
         try {
-            this.connectionHandler = new ConnectionHandler(connectionSocket);
+            credentialsHandler = new CredentialsHandler(filesHandler.getConfigFilePath("userInfo.csv"));
+            connectionHandler = new ConnectionHandler(connectionSocket);
         } catch (IOException e) {
             closeConnection();
-            System.out.println("Could not initiate connection handler in server instance. Terminating server");
+            System.out.println(e.getMessage());
         }
-        credentialsHandler = new CredentialsHandler(filesHandler.getConfigFilePath("userInfo.csv"));
     }
 
     /**
@@ -66,64 +73,84 @@ public class ServerInstance implements Runnable {
 
 
     /**
-     *
+     * Decodes the incoming commands from the client and determines appropriate response
      */
     private void decodeCommands() {
         String[] commands;
-        if (connectionHandler.readIncoming()) {
-            if (DEBUG) System.out.println("message : " + connectionHandler.getIncomingMessage());
 
-            commands = connectionHandler.getIncomingMessage().split("\\s+");
-            switch (commands[0].toUpperCase()) {
-                case "USER":
-                    user(commands[1]);
-                    break;
-                case "ACCT":
-                    acct(commands[1]);
-                    break;
-                case "PASS":
-                    pass(commands[1]);
-                    break;
-                case "TYPE":
-                    type(commands[1]);
-                    break;
-                case "LIST":
-                    list(Arrays.copyOfRange(commands, 1, commands.length));
-                    break;
-                case "CDIR":
-                    cdir(commands[1]);
-                    break;
-                case "KILL":
-                    kill(commands[1]);
-                    break;
-                case "NAME":
-                    name(commands[1]);
-                    break;
-                case "DONE":
-                    done();
-                    break;
-                case "RETR":
-                    retr(commands[1]);
-                    break;
-                case "SEND":
+        commands = tokenizedCommands();
 
-                    break;
-                case "STOP":
+        switch (commands[0].toUpperCase()) {
+            case "USER":
+                user(commands[1]);
+                break;
+            case "ACCT":
+                acct(commands[1]);
+                break;
+            case "PASS":
+                pass(commands[1]);
+                break;
+            case "TYPE":
+                type(commands[1]);
+                break;
+            case "LIST":
+                list(Arrays.copyOfRange(commands, 1, commands.length));
+                break;
+            case "CDIR":
+                cdir(commands[1]);
+                break;
+            case "KILL":
+                kill(commands[1]);
+                break;
+            case "NAME":
+                name(commands[1]);
+                break;
+            case "DONE":
+                done();
+                break;
+            case "RETR":
+                retr(commands[1]);
+                break;
+            case "STOR":
 
-                    break;
-                case "STOR":
-
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            closeConnection();
+                break;
+            default:
+                break;
         }
     }
 
+
+    // ****************
+    // Helper function
+    // ****************
+
     /**
-     * Sends the response in ascii.
+     * Checks if the client is logged in
+     *
+     * @return boolean True if user is logged in
+     */
+    private boolean isLoggedIn() {
+        return (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN);
+    }
+
+    /**
+     * Reads the incoming message from the client and tokenize
+     *
+     * @return Tokenized commands
+     */
+    private String[] tokenizedCommands() {
+        if (connectionHandler.readIncoming()) {
+            return connectionHandler.getIncomingMessage().split("\\s+");
+        } else {
+            closeConnection();
+            return new String[0];
+        }
+    }
+
+
+    /**
+     * Sends the response message to the client
+     * Wrapper to include error handling.
      */
     private void sendResponse() {
         if (!(this.connectionHandler.sendMessage(responseMessage))) {
@@ -131,8 +158,13 @@ public class ServerInstance implements Runnable {
         }
     }
 
-    private void sendFile(File file) {
-        if (!(connectionHandler.sendFile(file))) {
+    /**
+     * Sends a file to the client, Wrapper to include error handling.
+     *
+     * @param file File to send.
+     */
+    private void sendFile(File file, String transferType) {
+        if (!(connectionHandler.sendFile(file, transferType))) {
             closeConnection();
         }
     }
@@ -155,10 +187,15 @@ public class ServerInstance implements Runnable {
     // command functions
     // ******************************************
 
+    /**
+     * Checks if User is a valid user.
+     * Updates the login state and sends response.
+     *
+     * @param user user name
+     */
     private void user(String user) {
         credentialsHandler.checkUser(user);
         switch (credentialsHandler.getLoginState()) {
-
             case INIT -> {
                 responseMessage = "-Invalid user-id, try again";
             }
@@ -172,6 +209,12 @@ public class ServerInstance implements Runnable {
         sendResponse();
     }
 
+    /**
+     * Checks if acct matches the user.
+     * Updates the login state and sends response.
+     *
+     * @param acct account name
+     */
     private void acct(String acct) {
         credentialsHandler.checkAcct(acct);
         switch (credentialsHandler.getLoginState()) {
@@ -188,10 +231,14 @@ public class ServerInstance implements Runnable {
         sendResponse();
     }
 
+    /**
+     * Checks if pass matches the usr
+     * Updates the login state and sends response
+     *
+     * @param pass password
+     */
     private void pass(String pass) {
-
         credentialsHandler.checkPass(pass);
-
         switch (credentialsHandler.getLoginState()) {
             case INIT, USER_FOUND, ACCT_FOUND -> {
                 responseMessage = "-Wrong password, try again";
@@ -207,17 +254,18 @@ public class ServerInstance implements Runnable {
     }
 
     // ******************
-    // These functions need to be logged in
+    // The following command functions need to be logged in
     // ******************
-
 
     /**
      * Used to select the transfer type
      *
-     * @param type
+     * @param type A , B , C to indicate transfer type
      */
     private void type(String type) {
-        if (loggedIn()) {
+        if (!isLoggedIn()) {
+            responseMessage = "-You need to be logged in to use TYPE";
+        } else {
             switch (type.toUpperCase()) {
                 case "A" -> {
                     transferType = "A";
@@ -235,38 +283,50 @@ public class ServerInstance implements Runnable {
                     responseMessage = "-Type not valid";
                 }
             }
-        } else {
-            responseMessage = "-You need to be logged in to use TYPE";
         }
         sendResponse();
     }
 
     /**
-     * @param commands
+     * Lists the current directory the file handler is in.
+     * V for verbose, F for standard format.
+     * Lists current folder if no dir given. Else attempts to change to that folder then lists.
+     *
+     * @param args 2 args, first is selecting V or F, second is dir name
      */
-    private void list(String[] commands) {
-        if (loggedIn()) {
-            if (commands.length == 1) {
-                // No dir, will list previous dir
-                responseMessage = filesHandler.listFiles(commands[0]);
-            } else if (commands.length == 2) {
-                // dir included
-                responseMessage = filesHandler.listFiles(commands[0], commands[1]);
-            }
-            if (responseMessage != null) {
-                responseMessage = "+".concat(responseMessage);
-            } else {
-                responseMessage = "-Directory invalid";
-            }
-        } else {
+    private void list(String[] args) {
+        if (!isLoggedIn()) {
             responseMessage = "-You need to be logged in to use LIST";
+        } else {
+            // Logged in
+            try {
+                if (args.length == 1) {
+                    // No directory provided, will list previous dir
+                    String mode = args[0];
+                    responseMessage = filesHandler.listFiles(mode);
+                } else if (args.length == 2) {
+                    // dir included, switch to that dir then list
+                    String mode = args[0];
+                    String dir = args[1];
+                    responseMessage = filesHandler.listFiles(mode, dir);
+                }
+            } catch (FileNotFoundException e) {
+                // Cannot find Dir
+                responseMessage = e.getMessage();
+            }
         }
         sendResponse();
     }
 
+    /**
+     * Changes the you're directly in
+     * See readme for specific syntax
+     *
+     * @param dir directory name.
+     */
     private void cdir(String dir) {
         // Check if is logged in
-        if (loggedIn()) {
+        if (isLoggedIn()) {
             // See if change dir has been successful
             if (filesHandler.changeDir(dir)) {
                 responseMessage = "!Changed working dir to ".concat(String.valueOf(filesHandler.getCurrentPath()));
@@ -280,58 +340,74 @@ public class ServerInstance implements Runnable {
         sendResponse();
     }
 
+    /**
+     * Deletes a file from current directory
+     *
+     * @param fileName File to delete.
+     */
     private void kill(String fileName) {
-        if (loggedIn()) {
-            responseMessage = filesHandler.kill(fileName);
+        if (isLoggedIn()) {
+            responseMessage = filesHandler.delete(fileName);
         } else {
             responseMessage = "-Cannot use kill because you're not logged in";
         }
         sendResponse();
     }
 
+    /**
+     * Renames a file in the current directory. Need to be used with tobe command together.
+     *
+     * @param fileName File to change name.
+     */
     private void name(String fileName) {
-        if (loggedIn()) {
-            if (filesHandler.fileExist(fileName)) {
-                // check if specified file exists
-                responseMessage = "+File Exists";
-                sendResponse();
-                // wait for tobe with new file name
-                if (connectionHandler.readIncoming()) {
-                    String[] commands = connectionHandler.getIncomingMessage().split("\\s+");
-                    if (commands[0].toUpperCase().equals("TOBE")) {
-                        // attempt to change and send response
-                        responseMessage = filesHandler.rename(fileName, commands[1]);
-                    } else {
-                        responseMessage = "-Name change aborted as you need to send TOBE with new file name";
-                    }
-                    sendResponse();
-                }
-            } else {
-                // cannot find file.
-                responseMessage = String.format("-File wasn't renamed because %s does not exist", fileName);
-                sendResponse();
-            }
-        } else {
-            // not logged in
+        // Check login status
+        if (!isLoggedIn()) {
             responseMessage = "-You need to be logged in to use name";
-            sendResponse();
-        }
-    }
-
-    private void retr(String fileName) {
-        // Check if logged in
-        if (!loggedIn()) {
-            responseMessage = "-You need to be logged into use retr";
             sendResponse();
             return;
         }
         // Check if file exists
-        if (!filesHandler.fileExist(fileName)) {
-            responseMessage = "-File doesn't exist";
+        if (filesHandler.fileExist(fileName)) {
+            // cannot find file.
+            responseMessage = String.format("-File wasn't renamed because %s does not exist", fileName);
             sendResponse();
             return;
         }
 
+        responseMessage = "+File Exists";
+        sendResponse();
+
+        // wait for tobe with new file name
+        String[] commands = tokenizedCommands();
+        if (commands[0].toUpperCase().equals("TOBE")) {
+            // attempt to change and send response
+            responseMessage = filesHandler.rename(fileName, commands[1]);
+        } else {
+            responseMessage = "-Name change aborted as you need to send TOBE with new file name";
+        }
+        sendResponse();
+
+    }
+
+    /**
+     * Used to retrieve a file from the server to the client.
+     *
+     * @param fileName file to retrieve
+     */
+    private void retr(String fileName) {
+        // Check if logged in
+        if (!isLoggedIn()) {
+            responseMessage = "-You need to be logged into use retr";
+            sendResponse();
+            return;
+        }
+
+        // Check if file exists
+        if (filesHandler.fileExist(fileName)) {
+            responseMessage = "-File doesn't exist";
+            sendResponse();
+            return;
+        }
 
         // Send file size over
         File file = new File(filesHandler.getCurrentPath().toAbsolutePath() + File.separator + fileName);
@@ -339,42 +415,35 @@ public class ServerInstance implements Runnable {
         sendResponse();
 
         // Check if they want to accept file
-        String[] commands = getCommands();
+        String[] commands = tokenizedCommands();
         switch (commands[0].toUpperCase()) {
             case "SEND" -> {
                 responseMessage = "+Sending, this might take a while depending on size";
                 sendResponse();
 
-                sendFile(file);
+                sendFile(file, transferType);
+
                 responseMessage = "+Ok file sent";
                 sendResponse();
             }
-            case "STOP" ->{
+            case "STOP" -> {
                 responseMessage = "+ok, RETR aborted";
                 sendResponse();
-            }default -> {
+            }
+            default -> {
                 responseMessage = "-Unrecognised command, RETR aborted";
                 sendResponse();
             }
         }
     }
 
+
+    /**
+     * Closes the Connection safely
+     */
     private void done() {
         responseMessage = "+Thank you for using MCHE226 STFP service.";
         sendResponse();
         closeConnection();
-    }
-
-    private boolean loggedIn() {
-        return (credentialsHandler.getLoginState() == CredentialsHandler.LoginState.LOGGED_IN);
-    }
-
-    private String[] getCommands() {
-        if (connectionHandler.readIncoming()) {
-            return connectionHandler.getIncomingMessage().split("\\s+");
-        } else {
-            closeConnection();
-            return new String[0];
-        }
     }
 }
