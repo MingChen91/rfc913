@@ -20,7 +20,6 @@ public class FilesHandler {
     private final Path configsPath;
     private Path currentPath;
 
-
     /**
      * Sets the folder paths for files and configs folder. Relative to the root direct of java files
      *

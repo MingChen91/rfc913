@@ -376,14 +376,14 @@ public class ServerInstance implements Runnable {
         }
 
         // Check if file exists
-        if (filesHandler.fileExist(fileName)) {
+        if (!filesHandler.fileExist(fileName)) {
             responseMessage = "-File doesn't exist";
             sendResponse();
             return;
         }
 
         // Send file size over
-        File file = new File(filesHandler.getCurrentPath().toAbsolutePath() + File.separator + fileName);
+        File file = filesHandler.generateFile(fileName, true);
         responseMessage = String.valueOf(file.length());
         sendResponse();
 
@@ -482,9 +482,9 @@ public class ServerInstance implements Runnable {
         //waiting for file to send
         try {
             connectionHandler.receiveFile(file, fileSize, append);
-            responseMessage = "Saved" + fileName;
+            responseMessage = "+Saved " + fileName;
         } catch (IOException e) {
-            responseMessage = "Couldn't save because" + e.getMessage();
+            responseMessage = "-Couldn't save because" + e.getMessage();
         }
         sendResponse();
     }

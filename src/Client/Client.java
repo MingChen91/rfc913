@@ -480,9 +480,7 @@ public class Client {
             // error from server side about file, exit.
             return true;
         }
-        System.out.println("got to here");
-        displayServerMessage();
-        System.out.println("but not here");
+        System.out.println(response);
         // -- Send file size
         inputCommands = "SIZE " + (file.length());
         sendCommands();
@@ -492,6 +490,8 @@ public class Client {
         if (response.charAt(0) == '-') {
             return true;
         }
+        System.out.println(response);
+
         // Sends file over, If connection bad close client.
         if (!connectionHandler.sendFile(file)) {
             closeConnection();
