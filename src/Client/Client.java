@@ -16,6 +16,7 @@ import java.net.Socket;
 public class Client {
     // Infinite loop boolean
     private boolean running = true;
+    private boolean cdirFlag = false;
     // Server IP and Port
     private static final String IP = "localhost";
     private static final int PORT = 6666;
@@ -60,14 +61,16 @@ public class Client {
     public void run() {
         boolean validCommand;
         while (running) {
-            displayServerMessage();
+            if (!cdirFlag) displayServerMessage();
+            cdirFlag = false;
             validCommand = false;
             // Gets input from terminal and selects the correct command to run
             while (!validCommand) {
                 validCommand = decodeTokens(tokenizeInput());
             }
             // Send the command over
-            if (running) sendCommands();
+            if ((running) && !cdirFlag) sendCommands();
+
         }
         System.out.println("Client Session ended.");
     }
@@ -272,19 +275,23 @@ public class Client {
             return false;
         }
 
-        // get password
+        // Send command over
         String response;
+        String[] tks;
+        boolean okInput;
         while (true) {
             sendCommands();
             response = retrieveMessage();
             if (response.charAt(0) != '+') {
                 // Breaks the loop when something other than "+" received
+                System.out.println(response);
+                cdirFlag = true; // temp fix for sending this pass or acct command twice
                 break;
             }
             System.out.println(response);
             // + send pass or account
-            String[] tks;
-            boolean okInput = false;
+            // Loop until pass or acct command entered
+            okInput = false;
             while (!okInput) {
                 tks = tokenizeInput();
                 if (tks[0].equalsIgnoreCase("pass")) {
