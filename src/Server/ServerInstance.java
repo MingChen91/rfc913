@@ -9,7 +9,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
-import java.util.Set;
 
 // todo and nested ifs and CDIR
 
@@ -17,9 +16,6 @@ import java.util.Set;
  * This is a single instance of a server.
  */
 public class ServerInstance implements Runnable {
-    private static final Set<String> availableCommands = Set.of(
-            "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR"
-    );
     // Sockets
     private final Socket connectionSocket;
     // Handlers
@@ -58,13 +54,10 @@ public class ServerInstance implements Runnable {
      */
     @Override
     public void run() {
-        String a = "";
-        boolean readOK;
         // Read input from Client
         System.out.println("Server instance started");
         // Send server online message
         connectionHandler.sendMessage("+MCHE226 SFTP Service");
-
         while (running) {
             decodeCommands();
         }
@@ -112,7 +105,6 @@ public class ServerInstance implements Runnable {
                 retr(commands[1]);
                 break;
             case "STOR":
-
                 break;
             default:
                 break;
@@ -196,15 +188,9 @@ public class ServerInstance implements Runnable {
     private void user(String user) {
         credentialsHandler.checkUser(user);
         switch (credentialsHandler.getLoginState()) {
-            case INIT -> {
-                responseMessage = "-Invalid user-id, try again";
-            }
-            case USER_FOUND, ACCT_FOUND, PASS_FOUND -> {
-                responseMessage = "+User-id valid, send account and password";
-            }
-            case LOGGED_IN -> {
-                responseMessage = "!" + user + " logged in";
-            }
+            case INIT -> responseMessage = "-Invalid user-id, try again";
+            case USER_FOUND, ACCT_FOUND, PASS_FOUND -> responseMessage = "+User-id valid, send account and password";
+            case LOGGED_IN -> responseMessage = "!" + user + " logged in";
         }
         sendResponse();
     }
@@ -218,15 +204,9 @@ public class ServerInstance implements Runnable {
     private void acct(String acct) {
         credentialsHandler.checkAcct(acct);
         switch (credentialsHandler.getLoginState()) {
-            case INIT, USER_FOUND, PASS_FOUND -> {
-                responseMessage = "-Invalid Account, try again";
-            }
-            case ACCT_FOUND -> {
-                responseMessage = "+Account ok or not needed. Send your password next";
-            }
-            case LOGGED_IN -> {
-                responseMessage = "!Account was ok or not needed. Skip the password.";
-            }
+            case INIT, USER_FOUND, PASS_FOUND -> responseMessage = "-Invalid Account, try again";
+            case ACCT_FOUND -> responseMessage = "+Account ok or not needed. Send your password next";
+            case LOGGED_IN -> responseMessage = "!Account was ok or not needed. Skip the password.";
         }
         sendResponse();
     }
@@ -240,15 +220,9 @@ public class ServerInstance implements Runnable {
     private void pass(String pass) {
         credentialsHandler.checkPass(pass);
         switch (credentialsHandler.getLoginState()) {
-            case INIT, USER_FOUND, ACCT_FOUND -> {
-                responseMessage = "-Wrong password, try again";
-            }
-            case PASS_FOUND -> {
-                responseMessage = "+Password ok but you haven't specified the account";
-            }
-            case LOGGED_IN -> {
-                responseMessage = "!Password is ok and you can begin file transfers.";
-            }
+            case INIT, USER_FOUND, ACCT_FOUND -> responseMessage = "-Wrong password, try again";
+            case PASS_FOUND -> responseMessage = "+Password ok but you haven't specified the account";
+            case LOGGED_IN -> responseMessage = "!Password is ok and you can begin file transfers.";
         }
         sendResponse();
     }
@@ -279,9 +253,7 @@ public class ServerInstance implements Runnable {
                     transferType = "C";
                     responseMessage = "+Using Continuous mode";
                 }
-                default -> {
-                    responseMessage = "-Type not valid";
-                }
+                default -> responseMessage = "-Type not valid";
             }
         }
         sendResponse();

@@ -14,7 +14,6 @@ import java.util.Set;
 public class Client {
     // Infinite loop boolean
     private boolean running = true;
-    private final static boolean DEBUG = false;
     // Available Commands
     private static final Set<String> availableCommands = Set.of(
             "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR", "TOBE"
@@ -393,15 +392,9 @@ public class Client {
         while (!okInput) {
             tks = tokenizeInput();
             switch (tks[0].toUpperCase()) {
-                case "SEND" -> {
-                    okInput = send(tks, file, fileSize);
-                }
-                case "STOP" -> {
-                    okInput = stop(tks);
-                }
-                default -> {
-                    System.out.println("Only can accept SEND or STOP at this point.");
-                }
+                case "SEND" -> okInput = send(tks, file, fileSize);
+                case "STOP" -> okInput = stop(tks);
+                default -> System.out.println("Only can accept SEND or STOP at this point.");
             }
         }
         return true;
