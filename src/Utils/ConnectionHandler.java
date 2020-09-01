@@ -109,18 +109,12 @@ public class ConnectionHandler {
         }
     }
 
-    public void receiveFile(File file, long fileSize, boolean overWrite) throws IOException {
-        System.out.println("in receive file");
-        System.out.println(file);
-        System.out.println(fileSize);
-
+    public void receiveFile(File file, long fileSize, boolean append) throws IOException {
         // Output stream to write file to
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file, overWrite));
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file, append));
         for (int i = 0; i < fileSize; i++) {
             bos.write(dataIn.read());
         }
         bos.close();
     }
-
-
 }

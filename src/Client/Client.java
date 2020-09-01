@@ -32,6 +32,9 @@ public class Client {
     private BufferedReader terminalReader;
 
 
+    /**
+     * Constructor for the client, initializes all the handlers.
+     */
     public Client() {
         // Create the socket, connection handler and files handler
         try {
@@ -45,24 +48,27 @@ public class Client {
         }
     }
 
+
     /**
-     * Main
+     * Main function, starts a client.
      */
     public static void main(String[] args) {
         Client client = new Client();
         client.run();
     }
 
-    public void run() {
-        boolean correctInput;
 
+    /**
+     * Main loop for the client
+     */
+    public void run() {
+        boolean validCommand;
         while (running) {
-            correctInput = false;
-            displayMessage();
-            // decode input
-            while (!correctInput) {
-                if (DEBUG) System.out.println("Collecting commands");
-                correctInput = decodeTokens(tokenizeInput());
+            displayServerMessage();
+            validCommand = false;
+            // Gets input from terminal and selects the correct command to run
+            while (!validCommand) {
+                validCommand = decodeTokens(tokenizeInput());
             }
             // Send the command over
             if (running) sendCommands();
@@ -70,15 +76,23 @@ public class Client {
         System.out.println("Client Session ended.");
     }
 
-    private void displayMessage() {
-        if (DEBUG) System.out.println("Waiting for incoming message");
-        if (connectionHandler.readIncoming()) {
-            System.out.println(connectionHandler.getIncomingMessage());
-        } else {
-            closeConnection();
-        }
+    // ***********************
+    // Helper functions
+    // ***********************
+
+    /**
+     * Displays the message from Server
+     */
+    private void displayServerMessage() {
+        System.out.println(retrieveMessage());
     }
 
+
+    /**
+     * Retrieves the message from Server
+     *
+     * @return String - Message from the server
+     */
     private String retrieveMessage() {
         if (connectionHandler.readIncoming()) {
             return connectionHandler.getIncomingMessage();
@@ -89,6 +103,11 @@ public class Client {
     }
 
 
+    /**
+     * Gets input from terminal and splits into tokens
+     *
+     * @return tokenized input
+     */
     private String[] tokenizeInput() {
         try {
             inputCommands = terminalReader.readLine();
@@ -101,8 +120,30 @@ public class Client {
     }
 
     /**
-     * main function that decodes what commands are entered and responds accordingly
-     * Reads the terminal (system.in) and runs appropriate method accordingly.
+     * Wrapper for sending commands. Closes connection if fails.
+     */
+    private void sendCommands() {
+        if (!(connectionHandler.sendMessage(inputCommands))) {
+            closeConnection();
+        }
+    }
+
+    /**
+     * Stops the program and closes the connection safely.
+     */
+    public void closeConnection() {
+        try {
+            this.running = false;
+            this.clientSocket.close();
+            System.out.println("Closing Client Session");
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Could not close connection");
+        }
+    }
+
+    /**
+     * Checks the first token in the input command and selects the correct command to run
      */
     private boolean decodeTokens(String[] tokens) {
         // Selecting which command to run
@@ -142,38 +183,17 @@ public class Client {
         return true;
     }
 
-    /**
-     * Closes stops the program and closes the connection safely.
-     */
-    public void closeConnection() {
-        try {
-            this.running = false;
-            this.clientSocket.close();
-            System.out.println("Closing Client Session");
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Could not close connection");
-        }
-    }
+
+    // ***********************
+    // Basic Command functions
+    // Checks correct amount of tokens are present then sends the command over
+    // ***********************
 
     /**
-     * Wrapper for sending commands. Closes connection if fails.
-     */
-    private void sendCommands() {
-        if (!(connectionHandler.sendMessage(inputCommands))) {
-            closeConnection();
-        }
-    }
-
-    //***********
-    // command functions
-    //**********
-
-
-    /**
-     * Sends User name over to the server.
+     * Checks user command has correct amount of tokens, Displays error message if not
      *
-     * @param tokens command line args
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
      */
     private boolean user(String[] tokens) {
         // check tokens is exactly 2 fields.
@@ -184,6 +204,12 @@ public class Client {
         return true;
     }
 
+    /**
+     * Checks acct command has correct amount of tokens, Displays error message if not
+     *
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
+     */
     private boolean acct(String[] tokens) {
         // check commands is exactly 2 fields.
         if (tokens.length != 2) {
@@ -193,6 +219,12 @@ public class Client {
         return true;
     }
 
+    /**
+     * Checks pass command has correct amount of tokens, Displays error message if not
+     *
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
+     */
     private boolean pass(String[] tokens) {
         // check commands is exactly 2 fields.
         if (tokens.length != 2) {
@@ -202,6 +234,13 @@ public class Client {
         return true;
     }
 
+    /**
+     * Checks type command has correct amount of tokens, and the argument is either A or B or C
+     * Displays error message if not
+     *
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
+     */
     private boolean type(String[] tokens) {
         if (tokens.length != 2) {
             System.out.println("TYPE command format : TYPE { A | B | C }");
@@ -210,12 +249,18 @@ public class Client {
         return true;
     }
 
+    /**
+     * Checks list command has correct amount of tokens, and the argument is either V or F
+     * Displays error message if not
+     *
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
+     */
     private boolean list(String[] tokens) {
         if (tokens.length != 2 && tokens.length != 3) {
             System.out.println("LIST command format : LIST { F | V } <directory-path>. check README for specific directory path syntax");
             return false;
         }
-
         if (!(tokens[1].toUpperCase().equals("V") || tokens[1].toUpperCase().equals("F"))) {
             System.out.println("Mode can only be V or F");
             return false;
@@ -223,6 +268,12 @@ public class Client {
         return true;
     }
 
+    /**
+     * Checks cdir command has correct amount of tokens, Displays error message if not
+     *
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
+     */
     private boolean cdir(String[] tokens) {
         if (tokens.length != 2) {
             System.out.println("LIST command format : LIST { F | V } <directory-path> , check README for specific directory path syntax");
@@ -231,6 +282,12 @@ public class Client {
         return true;
     }
 
+    /**
+     * Checks kill command has correct amount of tokens, Displays error message if not
+     *
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
+     */
     private boolean kill(String[] tokens) {
         if (tokens.length != 2) {
             System.out.println("KILL command format : KILL <file> (File has to be within currently directory)");
@@ -239,6 +296,12 @@ public class Client {
         return true;
     }
 
+    /**
+     * Checks name command has correct amount of tokens, Displays error message if not
+     *
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
+     */
     private boolean name(String[] tokens) {
         if (tokens.length != 2) {
             System.out.println("NAME command format : NAME <file> (File has to be within currently directory)");
@@ -247,6 +310,12 @@ public class Client {
         return true;
     }
 
+    /**
+     * Checks tobe command has correct amount of tokens, Displays error message if not
+     *
+     * @param tokens tokenized input from command line
+     * @return Boolean, true if command is ok, false if tokens not in correct format
+     */
     private boolean tobe(String[] tokens) {
         if (tokens.length != 2) {
             System.out.println("TOBE command format : TOBE <new file name>");
@@ -255,6 +324,18 @@ public class Client {
         return true;
     }
 
+    // **********************
+    // Advanced Commands
+    // Commands that require some more checking or depends on servers responses
+    // **********************
+
+    /**
+     * Checks the done command has the right about of arguments. If so sends it over then waits for a +response
+     * Shuts down the client
+     *
+     * @param tokens tokenized input from command line
+     * @return True if successfully finished, false if tokens incorrect
+     */
     private boolean done(String[] tokens) {
         if (tokens.length != 1) {
             System.out.println("DONE command format : DONE");
@@ -262,28 +343,35 @@ public class Client {
         }
         // send the DONE command and wait for a response
         sendCommands();
-        if (connectionHandler.readIncoming()) {
-            String msg = connectionHandler.getIncomingMessage();
-            if (msg.charAt(0) == '+') {
-                System.out.println(msg);
-                closeConnection();
-            }
+        String msg = retrieveMessage();
+        // Response ok from server, close this instance of client.
+        if (msg.charAt(0) == '+') {
+            System.out.println(msg);
+            closeConnection();
         }
         return true;
     }
 
+    /**
+     * Performs checks on the tokens, then attempts to retrieve a file from server
+     *
+     * @param tokens tokenized input from command line
+     * @return True if exited successfully, false if something wrong with command entered.
+     */
     private boolean retr(String[] tokens) {
+        // Checking tokens lengh
         if (tokens.length != 2) {
             System.out.println("RETR command format : RETR <filename>");
             return false;
         }
 
         String fileName = tokens[1];
-        // check if
+        // check if file name is valid
         if (fileName.contains(File.separator)) {
             System.out.println("File name should not contain directories");
             return false;
         }
+        // Send the retr command over
         sendCommands();
 
         // Either get fileSize or error message
@@ -292,51 +380,70 @@ public class Client {
         if (response.charAt(0) == '-') {
             return true;
         }
-
-
-        // Receive Message
+        // Display size
         System.out.println(response);
+        // Retrieve file
+        File file = filesHandler.generateReceiveFile(fileName);
         long fileSize = Long.parseLong(response);
-        File file = filesHandler.generateFile(fileName);
 
-        System.out.println("file size" + fileSize);
-        System.out.println(file);
-
-        // Get input should be stop or tobe
+        // Get input, should be stop or tobe
         String[] tks;
         boolean okInput = false;
+        // Loops until valid input
         while (!okInput) {
-
             tks = tokenizeInput();
-
             switch (tks[0].toUpperCase()) {
                 case "SEND" -> {
-                    if (tks.length == 1) {
-                        sendCommands();
-                        displayMessage();
-
-                        okInput = true;
-                        try {
-                            connectionHandler.receiveFile(file, fileSize, false);
-                        } catch (IOException e) {
-                            System.out.println("Cannot receive File, no access to hard drive?");
-                        }
-                    } else {
-                        System.out.println("SEND command format : SEND");
-                    }
+                    okInput = send(tks, file, fileSize);
                 }
                 case "STOP" -> {
-                    if (tks.length == 1) {
-                        sendCommands();
-                        okInput = true;
-                    } else {
-                        System.out.println("STOP command format : STOP");
-                    }
+                    okInput = stop(tks);
                 }
                 default -> {
                     System.out.println("Only can accept SEND or STOP at this point.");
                 }
             }
+        }
+        return true;
+    }
+
+    /**
+     * Used only from within retr, Checks if stop command is in the right format
+     * Tells server to not send file
+     *
+     * @param tokens Input tokens from command line
+     * @return True if valid tokens, false if not.
+     */
+    private boolean stop(String[] tokens) {
+        if (tokens.length != 1) {
+            System.out.println("STOP command format : STOP");
+            return false;
+        }
+        sendCommands();
+        return true;
+    }
+
+    /**
+     * Used only from within retr, Checks if send command is in right format
+     * Tells the server to send the file.
+     *
+     * @param tokens   Input tokens from command line
+     * @param file     where the received file is to be saved
+     * @param fileSize size of the file to be transferred
+     * @return true if successful, false if error in the command tokens
+     */
+    private boolean send(String[] tokens, File file, Long fileSize) {
+        if (tokens.length != 1) {
+            System.out.println("SEND command format : SEND");
+            return false;
+        }
+        // Send Message over
+        sendCommands();
+        displayServerMessage();
+        try {
+            connectionHandler.receiveFile(file, fileSize, false);
+        } catch (IOException e) {
+            System.out.println("Cannot receive File, no access to hard drive?");
         }
         return true;
     }

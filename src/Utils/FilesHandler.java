@@ -245,7 +245,7 @@ public class FilesHandler {
         File file = new File(currentPath.toAbsolutePath() + File.separator + fileName);
         return file.exists();
     }
-    public File generateFile(String fileName){
+    public File generateReceiveFile(String fileName){
         return new File(filesFolder.toAbsolutePath() + File.separator + fileName);
     }
 

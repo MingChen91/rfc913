@@ -331,12 +331,12 @@ public class ServerInstance implements Runnable {
             sendResponse();
             return;
         }
+
+
         // Send file size over
         File file = new File(filesHandler.getCurrentPath().toAbsolutePath() + File.separator + fileName);
         responseMessage = String.valueOf(file.length());
-        if (DEBUG) System.out.println(responseMessage);
         sendResponse();
-        if (DEBUG) System.out.println("response sent");
 
         // Check if they want to accept file
         String[] commands = getCommands();
