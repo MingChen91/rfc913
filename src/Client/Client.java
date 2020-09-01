@@ -271,6 +271,31 @@ public class Client {
             System.out.println("LIST command format : LIST { F | V } <directory-path> , check README for specific directory path syntax");
             return false;
         }
+
+        // get password
+        String response;
+        while (true) {
+            sendCommands();
+            response = retrieveMessage();
+            if (response.charAt(0) != '+') {
+                // Breaks the loop when something other than "+" received
+                break;
+            }
+            System.out.println(response);
+            // + send pass or account
+            String[] tks;
+            boolean okInput = false;
+            while (!okInput) {
+                tks = tokenizeInput();
+                if (tks[0].equalsIgnoreCase("pass")) {
+                    okInput = pass(tks);
+                } else if (tks[0].equalsIgnoreCase("acct")) {
+                    okInput = pass(tks);
+                } else {
+                    System.out.println("please send pass or account over");
+                }
+            }
+        }
         return true;
     }
 

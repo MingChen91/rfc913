@@ -185,7 +185,7 @@ public class FilesHandler {
 
         if ((dir.charAt(0) == '~') && (dir.length() == 1)) {
             // go to default folder
-            currentPath = filesPath;
+            resetCurrentPath();
             return true;
         } else if (dir.equals("..")) {
             // Go up a level
@@ -304,6 +304,13 @@ public class FilesHandler {
      */
     public Path getCurrentPath() {
         return currentPath;
+    }
+
+    /**
+     * Resets currentPath to Files folder
+     */
+    public void resetCurrentPath(){
+        currentPath = filesPath;
     }
 }
 

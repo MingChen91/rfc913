@@ -17,6 +17,7 @@ public class Server {
      * Starts the server which creates a welcome socket and redirects any incoming connections to a connection socket.
      */
     public static void main(String[] args) {
+
         Server server = new Server();
         // Accepts any new connections and opens a new socket for data transfer
         while (true) {

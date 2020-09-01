@@ -298,16 +298,76 @@ public class ServerInstance implements Runnable {
      */
     private void cdir(String dir) {
         // Check if is logged in
-        if (!isLoggedIn()) {
-            responseMessage = "-Cannot use CDIR when not logged in";
-        } else if (filesHandler.changeDir(dir)) {
-            // See if change dir has been successful
-            responseMessage = "!Changed working dir to ".concat(String.valueOf(filesHandler.getCurrentPath()));
-
-        } else {
-            responseMessage = "Can't connect to directory because directory does not exist or you have no permission";
+        switch (credentialsHandler.getLoginState()) {
+            // Not logged in at all
+            case INIT -> responseMessage = "-Cannot use CDIR when not logged in";
+            // Somewhat logged in but not completed process
+            case USER_FOUND, ACCT_FOUND, PASS_FOUND -> {
+                // Check if the dir exists
+                if (filesHandler.changeDir(dir)) {
+                    responseMessage = "+directory ok, send account/password";
+                    sendResponse();
+                    // Not logged in so reset current path to default
+                    filesHandler.resetCurrentPath();
+                } else {
+                    responseMessage = "-Can't connect to directory because directory does not exist or you have no permission";
+                    sendResponse();
+                    return;
+                }
+            }
+            case LOGGED_IN -> {
+                if (filesHandler.changeDir(dir)) {
+                    // See if change dir has been successful
+                    responseMessage = "!Changed working dir to ".concat(String.valueOf(filesHandler.getCurrentPath()));
+                } else {
+                    // not logged in , check if direct exists
+                    responseMessage = "-Can't connect to directory because directory does not exist or you have no permission";
+                }
+                sendResponse();
+                return;
+            }
         }
-        sendResponse();
+
+        // -- Getting pass or account--
+        String[] tks;
+
+        // Keeps trying to get pass and account until ! or - response code.
+        boolean plusRespCode = true;
+        while (plusRespCode) {
+            tks = tokenizedCommands();
+            if (tks[0].equalsIgnoreCase("pass")) {
+                // Check the password then see what the state is
+                credentialsHandler.checkPass(tks[1]);
+                switch (credentialsHandler.getLoginState()) {
+                    case PASS_FOUND -> responseMessage = "+password ok send account";
+                    case LOGGED_IN -> {
+                        filesHandler.changeDir(dir);
+                        responseMessage = "!Changed working dir to " + filesHandler.getCurrentPath();
+                        plusRespCode = false;
+                    }
+                    default -> {
+                        responseMessage = "-invalid password";
+                        plusRespCode = false;
+                    }
+                }
+            } else if (tks[0].equalsIgnoreCase("acct")) {
+                // Check the account the see what the state is
+                credentialsHandler.checkAcct(tks[1]);
+                switch (credentialsHandler.getLoginState()) {
+                    case ACCT_FOUND -> responseMessage = "+account ok send password";
+                    case LOGGED_IN -> {
+                        filesHandler.changeDir(dir);
+                        responseMessage = "!Changed working dir to " + filesHandler.getCurrentPath();
+                        plusRespCode = false;
+                    }
+                    default -> {
+                        responseMessage = "-invalid account";
+                        plusRespCode = false;
+                    }
+                }
+            }
+            sendResponse();
+        }
     }
 
     /**
