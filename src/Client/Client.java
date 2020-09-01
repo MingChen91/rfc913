@@ -16,7 +16,10 @@ import java.net.Socket;
 public class Client {
     // Infinite loop boolean
     private boolean running = true;
+    // Flag to prevent cdir sending pass/acct twice
+    // Needed because you have to check the response from server before you can exit cdir.
     private boolean cdirFlag = false;
+
     // Server IP and Port
     private static final String IP = "localhost";
     private static final int PORT = 6666;
@@ -61,6 +64,9 @@ public class Client {
     public void run() {
         boolean validCommand;
         while (running) {
+            // CDIR flag is needed because with cdir when sending over acct/pass,
+            //  you have to check response before you can finish
+            // Display message
             if (!cdirFlag) displayServerMessage();
             cdirFlag = false;
             validCommand = false;
@@ -70,7 +76,6 @@ public class Client {
             }
             // Send the command over
             if ((running) && !cdirFlag) sendCommands();
-
         }
         System.out.println("Client Session ended.");
     }
@@ -285,7 +290,7 @@ public class Client {
             if (response.charAt(0) != '+') {
                 // Breaks the loop when something other than "+" received
                 System.out.println(response);
-                cdirFlag = true; // temp fix for sending this pass or acct command twice
+                cdirFlag = true; // flag to prevent pass / account sending twice
                 break;
             }
             System.out.println(response);
