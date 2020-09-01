@@ -3,9 +3,11 @@ package Client;
 import Utils.ConnectionHandler;
 import Utils.FilesHandler;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
-import java.util.Set;
 
 
 /**
@@ -14,11 +16,6 @@ import java.util.Set;
 public class Client {
     // Infinite loop boolean
     private boolean running = true;
-    // Available Commands
-    private static final Set<String> availableCommands = Set.of(
-            "USER", "ACCT", "PASS", "TYPE", "LIST", "CDIR", "KILL", "NAME", "DONE", "RETR", "STOR", "TOBE"
-    );
-
     // Server IP and Port
     private static final String IP = "localhost";
     private static final int PORT = 6666;
@@ -146,40 +143,35 @@ public class Client {
      */
     private boolean decodeTokens(String[] tokens) {
         // Selecting which command to run
-        if (availableCommands.contains(tokens[0].toUpperCase())) {
-            switch (tokens[0].toUpperCase()) {
-                case "USER":
-                    return user(tokens);
-                case "ACCT":
-                    return acct(tokens);
-                case "PASS":
-                    return pass(tokens);
-                case "TYPE":
-                    return type(tokens);
-                case "LIST":
-                    return list(tokens);
-                case "CDIR":
-                    return cdir(tokens);
-                case "KILL":
-                    return kill(tokens);
-                case "NAME":
-                    return name(tokens);
-                case "TOBE":
-                    return tobe(tokens);
-                case "DONE":
-                    return done(tokens);
-                case "RETR":
-                    return retr(tokens);
-                case "STOR":
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            System.out.println("Not a valid command, please choose from:\nUSER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
-            return false;
+        switch (tokens[0].toUpperCase()) {
+            case "USER":
+                return user(tokens);
+            case "ACCT":
+                return acct(tokens);
+            case "PASS":
+                return pass(tokens);
+            case "TYPE":
+                return type(tokens);
+            case "LIST":
+                return list(tokens);
+            case "CDIR":
+                return cdir(tokens);
+            case "KILL":
+                return kill(tokens);
+            case "NAME":
+                return name(tokens);
+            case "TOBE":
+                return tobe(tokens);
+            case "DONE":
+                return done(tokens);
+            case "RETR":
+                return retr(tokens);
+            case "STOR":
+                return stor(tokens);
+            default:
+                System.out.println("Not a valid command, please choose from:\nUSER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
+                return false;
         }
-        return true;
     }
 
 
@@ -382,7 +374,7 @@ public class Client {
         // Display size
         System.out.println(response);
         // Retrieve file
-        File file = filesHandler.generateReceiveFile(fileName);
+        File file = filesHandler.generateFile(fileName, false);
         long fileSize = Long.parseLong(response);
 
         // Get input, should be stop or tobe
@@ -438,6 +430,73 @@ public class Client {
         } catch (IOException e) {
             System.out.println("Cannot receive File, no access to hard drive?");
         }
+        return true;
+    }
+
+    /**
+     * Used to send a file to the server.
+     *
+     * @param tokens input tokens from command line
+     * @return true if successful, false if error in command tokens
+     */
+    private boolean stor(String[] tokens) {
+        String mode;
+        String fileName;
+        // Check tokens length
+        if (tokens.length != 3) {
+            System.out.println("STOR command format : Store { NEW | OLD | APP } <fileName>");
+            return false;
+        }
+        mode = tokens[1].toUpperCase();
+        fileName = tokens[2];
+        if (!(mode.equals("NEW") || (mode.equals("OLD")) || (mode.equals("APP")))) {
+            System.out.println("STOR command format : Store { NEW | OLD | APP } <fileName>");
+        }
+
+
+        // File name should not have directories
+        if (fileName.contains(File.separator)) {
+            System.out.println("File name shouldn't include directories");
+            return false;
+        }
+
+        // Check if source file exists
+        if (!filesHandler.fileExist(fileName)) {
+            System.out.println("Cannot find file in source folder.");
+            return false;
+        }
+
+        File file = filesHandler.generateFile(fileName, false);
+        // Check if file is actually a file or dir
+        if (!file.isFile()) {
+            System.out.println("Can't find file");
+            return false;
+        }
+
+        // -- Basic checks done, send stor command --
+        sendCommands();
+        String response = retrieveMessage();
+        if (response.charAt(0) == '-') {
+            // error from server side about file, exit.
+            return true;
+        }
+        System.out.println("got to here");
+        displayServerMessage();
+        System.out.println("but not here");
+        // -- Send file size
+        inputCommands = "SIZE " + (file.length());
+        sendCommands();
+
+        // -- Check if server has enough space.
+        response = retrieveMessage();
+        if (response.charAt(0) == '-') {
+            return true;
+        }
+        // Sends file over, If connection bad close client.
+        if (!connectionHandler.sendFile(file)) {
+            closeConnection();
+        }
+
         return true;
     }
 }

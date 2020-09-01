@@ -52,6 +52,10 @@ public class ConnectionHandler {
             // Read and append char to string until null terminator is received
             while (!finishedReading) {
                 incomingChar = messageIn.read();
+                // nothing to read
+                if (incomingChar == -1){
+                    return true;
+                }
                 if ((char) incomingChar == '\0') {
                     if (incomingMessage.length() > 0) {
                         finishedReading = true;
@@ -106,10 +110,20 @@ public class ConnectionHandler {
      */
     public boolean sendFile(File file, String transferType) {
         // Declare byte buffer the size of the file
+        if (!(transferType.equals("A") || transferType.equals("B") || transferType.equals("C"))) {
+            return false;
+        }
+        return sendFile(file);
+    }
+
+    /**
+     * Base version to send file
+     *
+     * @param file         file to send
+     * @return True if send ok, false if could not read file.
+     */
+    public boolean sendFile(File file) {
         try {
-            if (!(transferType.equals("A") || transferType.equals("B") || transferType.equals("C"))) {
-                return false;
-            }
             // Convert file to bytes
             byte[] bArray = Files.readAllBytes(file.toPath());
             // Send all the bytes

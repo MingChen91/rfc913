@@ -171,6 +171,7 @@ public class FilesHandler {
 
     /**
      * Checks the current path by navigating folders.
+     * todo do i want to restrict folder access?
      *
      * @param dir string representation of folder to change to
      * @return true if changed.
@@ -182,7 +183,6 @@ public class FilesHandler {
         //
         String newDir;
         File f;
-
 
         if ((dir.charAt(0) == '~') && (dir.length() == 1)) {
             // go to default folder
@@ -264,15 +264,39 @@ public class FilesHandler {
     }
 
     /**
-     * Generates the "File" class file in the receiving folder.
+     * Generates the "File" class file in the base files folder or current dir.
      *
-     * @param fileName name of file
+     * @param fileName   name of file
+     * @param currentDir Use current dir or base files dir
      * @return File object
      */
-    public File generateReceiveFile(String fileName) {
-        return new File(filesPath.toAbsolutePath() + File.separator + fileName);
+    public File generateFile(String fileName, boolean currentDir) {
+
+        return currentDir?
+                new File(currentPath.toAbsolutePath() + File.separator + fileName)
+                : new File(filesPath.toAbsolutePath() + File.separator + fileName);
     }
 
+
+    /**
+     * Checks if theres enough space to the file in current path
+     *
+     * @param fileSize file size to fit in current path
+     * @return True if can fit, False if can't fit or can't get information on usable space
+     */
+    public boolean enoughFreeSpace(long fileSize,boolean currentDir) {
+        try {
+            long freeSpace = currentDir?
+                    Files.getFileStore(currentPath).getUsableSpace():
+                    Files.getFileStore(filesPath).getUsableSpace();
+
+            return (freeSpace > fileSize);
+        } catch (IOException e) {
+            // Can't get usable space,
+            return false;
+        }
+
+    }
 
     /**
      * Gets the current path

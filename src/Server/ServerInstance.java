@@ -105,6 +105,7 @@ public class ServerInstance implements Runnable {
                 retr(commands[1]);
                 break;
             case "STOR":
+                stor(commands[1], commands[2]);
                 break;
             default:
                 break;
@@ -409,6 +410,84 @@ public class ServerInstance implements Runnable {
         }
     }
 
+    /**
+     * Used to store a from into the server
+     *
+     * @param mode     New, Old, App - Check readme for specs
+     * @param fileName Name of file to store.
+     */
+    private void stor(String mode, String fileName) {
+        // Check log in
+        if (!isLoggedIn()) {
+            responseMessage = "-You need to be logged in to use stor";
+            sendResponse();
+            return;
+        }
+        // Use current dir for STOR command
+        final boolean currentDir = true;
+        // Open the file specified at current directory
+        File file = filesHandler.generateFile(fileName, currentDir);
+
+        // Check what mode they want to send in
+        boolean append = false;
+        System.out.println(mode);
+        switch (mode.toUpperCase()) {
+            case "NEW" -> {
+                // New cannot over ride existing file
+                if (file.isFile()) {
+                    responseMessage = "-File Exists, but system doesn't support generations";
+                    sendResponse();
+                    return;
+                }
+                responseMessage = "+File does not exists, will create a new file";
+                sendResponse();
+            }
+            case "OLD" -> {
+                // Old file will, overwrite
+                if (file.isFile()) {
+                    responseMessage = "+Will write over old file";
+                } else {
+                    responseMessage = "+Will create new file";
+                }
+                sendResponse();
+            }
+            case "APP" -> {
+                // Append to existing file.
+                append = true;
+                if (file.isFile()) {
+                    responseMessage = "Will append to file";
+                } else {
+                    responseMessage = "Will create new file";
+                }
+                sendResponse();
+            }
+            default -> {
+                responseMessage = "-Invalid Mode";
+                sendResponse();
+            }
+        }
+
+        // Check  fileSize
+        String[] tks = tokenizedCommands();
+        String cmd = tks[0];
+        long fileSize = Long.parseLong(tks[1]);
+        if (!filesHandler.enoughFreeSpace(fileSize, currentDir)) {
+            responseMessage = "-Not enough room, don't send it";
+            sendResponse();
+            return;
+        }
+        responseMessage = "+ok, waiting for file";
+        sendResponse();
+
+        //waiting for file to send
+        try {
+            connectionHandler.receiveFile(file, fileSize, append);
+            responseMessage = "Saved" + fileName;
+        } catch (IOException e) {
+            responseMessage = "Couldn't save because" + e.getMessage();
+        }
+        sendResponse();
+    }
 
     /**
      * Closes the Connection safely
