@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
 
-// todo and nested ifs and CDIR
 
 /**
  * This is a single instance of a server.
@@ -299,16 +298,14 @@ public class ServerInstance implements Runnable {
      */
     private void cdir(String dir) {
         // Check if is logged in
-        if (isLoggedIn()) {
+        if (!isLoggedIn()) {
+            responseMessage = "-Cannot use CDIR when not logged in";
+        } else if (filesHandler.changeDir(dir)) {
             // See if change dir has been successful
-            if (filesHandler.changeDir(dir)) {
-                responseMessage = "!Changed working dir to ".concat(String.valueOf(filesHandler.getCurrentPath()));
-            } else {
-                responseMessage = "-Cannot connect to directory because directory does not exist or you do not have permission";
-            }
+            responseMessage = "!Changed working dir to ".concat(String.valueOf(filesHandler.getCurrentPath()));
+
         } else {
-            // todo more cdir vs login shit.
-            responseMessage = "-Cannot connect to directory because you are not logged in";
+            responseMessage = "Can't connect to directory because directory does not exist or you have no permission";
         }
         sendResponse();
     }

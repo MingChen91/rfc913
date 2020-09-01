@@ -266,6 +266,7 @@ public class Client {
      * @return Boolean, true if command is ok, false if tokens not in correct format
      */
     private boolean cdir(String[] tokens) {
+        // Check token lengths
         if (tokens.length != 2) {
             System.out.println("LIST command format : LIST { F | V } <directory-path> , check README for specific directory path syntax");
             return false;
