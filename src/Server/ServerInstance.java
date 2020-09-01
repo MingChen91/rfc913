@@ -300,7 +300,11 @@ public class ServerInstance implements Runnable {
         // Check if is logged in
         switch (credentialsHandler.getLoginState()) {
             // Not logged in at all
-            case INIT -> responseMessage = "-Cannot use CDIR when not logged in";
+            case INIT -> {
+                responseMessage = "-Cannot use CDIR when not logged in";
+                sendResponse();
+                return;
+            }
             // Somewhat logged in but not completed process
             case USER_FOUND, ACCT_FOUND, PASS_FOUND -> {
                 // Check if the dir exists
@@ -526,7 +530,6 @@ public class ServerInstance implements Runnable {
 
         // Check  fileSize
         String[] tks = tokenizedCommands();
-        String cmd = tks[0];
         long fileSize = Long.parseLong(tks[1]);
         if (!filesHandler.enoughFreeSpace(fileSize, currentDir)) {
             responseMessage = "-Not enough room, don't send it";
