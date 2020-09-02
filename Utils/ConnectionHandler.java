@@ -5,7 +5,8 @@ import java.net.Socket;
 import java.nio.file.Files;
 
 /**
- * Used for sending and receiving information from a connection socket. Attempts to resolve any errors
+ * Used for sending and receiving information from a connection socket. Attempts
+ * to resolve any errors
  */
 public class ConnectionHandler {
     private final DataOutputStream messageOut;
@@ -16,9 +17,9 @@ public class ConnectionHandler {
 
     private String incomingMessage;
 
-
     /**
-     * Constructor : Creates the necessary objects used for reading and writing to the connection.
+     * Constructor : Creates the necessary objects used for reading and writing to
+     * the connection.
      *
      * @param connectionSocket the connection socket to read and write from
      * @throws IOException error if connection socket is bad
@@ -36,12 +37,12 @@ public class ConnectionHandler {
         }
     }
 
-
     /**
-     * Monitors the socket for any incoming data. Blocks until a null terminator is received.
-     * Saves the incoming message, retrieve using getIncomingMessage()
+     * Monitors the socket for any incoming data. Blocks until a null terminator is
+     * received. Saves the incoming message, retrieve using getIncomingMessage()
      *
-     * @return Boolean indicating if read has been successful, false if error with connection
+     * @return Boolean indicating if read has been successful, false if error with
+     *         connection
      */
     public boolean readIncoming() {
         StringBuilder incomingMessage = new StringBuilder();
@@ -53,7 +54,7 @@ public class ConnectionHandler {
             while (!finishedReading) {
                 incomingChar = messageIn.read();
                 // nothing to read
-                if (incomingChar == -1){
+                if (incomingChar == -1) {
                     return true;
                 }
                 if ((char) incomingChar == '\0') {
@@ -73,7 +74,6 @@ public class ConnectionHandler {
             return false;
         }
     }
-
 
     /**
      * Sends an ascii string over the connection, ends with null terminator
@@ -119,7 +119,7 @@ public class ConnectionHandler {
     /**
      * Base version to send file
      *
-     * @param file         file to send
+     * @param file file to send
      * @return True if send ok, false if could not read file.
      */
     public boolean sendFile(File file) {
@@ -145,6 +145,7 @@ public class ConnectionHandler {
     public void receiveFile(File file, long fileSize, boolean append) throws IOException {
         // Output stream to write file to
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file, append));
+
         for (int i = 0; i < fileSize; i++) {
             bos.write(dataIn.read());
         }

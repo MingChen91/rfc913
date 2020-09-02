@@ -450,7 +450,11 @@ public class ServerInstance implements Runnable {
                 responseMessage = "+Sending, this might take a while depending on size";
                 sendResponse();
 
+                wait(200);
+
                 sendFile(file, transferType);
+
+                wait(200);
 
                 responseMessage = "+Ok file sent";
                 sendResponse();
@@ -551,4 +555,16 @@ public class ServerInstance implements Runnable {
         sendResponse();
         closeConnection();
     }
+
+    /**
+     * Sleeps for a small amount of time, prevent data stream flooding
+     */
+    private void wait(int ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
 }
