@@ -22,8 +22,10 @@ Files for the client and server transfer are stored by default in in the `Files`
 	Open two separate instances of terminal in the room folder `(../ming-rfc913)`
 	Terminal one (Server)
 	` $ java Server.Server`
+	
 	Terminal two (Client )
 	` $ java Client.Client`
+	
 **(Can open as many clients terminals as you need)**
 	
 	
@@ -113,6 +115,7 @@ PASS wrongpass
 
 ## Navigating Remote Server
 Once you receive a message starting with "!", it means you're logged in and other commands are availabe. 
+
 ### CDIR
 **Format:** `CDIR new-directory`
 CDIR is used to change directories, `new-directory` syntax:
