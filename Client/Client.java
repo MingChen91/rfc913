@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
-
 /**
  * Single instead of the client used in implementing RFC-913 SFTP
  */
@@ -17,7 +16,8 @@ public class Client {
     // Infinite loop boolean
     private boolean running = true;
     // Flag to prevent cdir sending pass/acct twice
-    // Needed because you have to check the response from server before you can exit cdir.
+    // Needed because you have to check the response from server before you can exit
+    // cdir.
     private boolean cdirFlag = false;
 
     // Server IP and Port
@@ -30,7 +30,6 @@ public class Client {
     private ConnectionHandler connectionHandler;
     private FilesHandler filesHandler;
     private BufferedReader terminalReader;
-
 
     /**
      * Constructor for the client, initializes all the handlers.
@@ -48,7 +47,6 @@ public class Client {
         }
     }
 
-
     /**
      * Main function, starts a client.
      */
@@ -57,7 +55,6 @@ public class Client {
         client.run();
     }
 
-
     /**
      * Main loop for the client
      */
@@ -65,9 +62,10 @@ public class Client {
         boolean validCommand;
         while (running) {
             // CDIR flag is needed because with cdir when sending over acct/pass,
-            //  you have to check response before you can finish
+            // you have to check response before you can finish
             // Display message
-            if (!cdirFlag) displayServerMessage();
+            if (!cdirFlag)
+                displayServerMessage();
             cdirFlag = false;
             validCommand = false;
             // Gets input from terminal and selects the correct command to run
@@ -75,7 +73,8 @@ public class Client {
                 validCommand = decodeTokens(tokenizeInput());
             }
             // Send the command over
-            if ((running) && !cdirFlag) sendCommands();
+            if ((running) && !cdirFlag)
+                sendCommands();
         }
         System.out.println("Client Session ended.");
     }
@@ -91,7 +90,6 @@ public class Client {
         System.out.println(retrieveMessage());
     }
 
-
     /**
      * Retrieves the message from Server
      *
@@ -106,7 +104,6 @@ public class Client {
         }
     }
 
-
     /**
      * Gets input from terminal and splits into tokens
      *
@@ -119,7 +116,8 @@ public class Client {
         } catch (IOException e) {
             System.out.println("Can't read input from terminal, ending session.");
             closeConnection();
-            return new String[0];
+            String[] failed = new String[] { "" };
+            return failed;
         }
     }
 
@@ -147,7 +145,8 @@ public class Client {
     }
 
     /**
-     * Checks the first token in the input command and selects the correct command to run
+     * Checks the first token in the input command and selects the correct command
+     * to run
      */
     private boolean decodeTokens(String[] tokens) {
         // Selecting which command to run
@@ -177,11 +176,11 @@ public class Client {
             case "STOR":
                 return stor(tokens);
             default:
-                System.out.println("Not a valid command, please choose from:\nUSER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
+                System.out.println(
+                        "Not a valid command, please choose from:\nUSER, ACCT, PASS, TYPE, LIST, CDIR, KILL, NAME, DONE, RETR, STOR");
                 return false;
         }
     }
-
 
     // ***********************
     // Basic Command functions
@@ -189,7 +188,8 @@ public class Client {
     // ***********************
 
     /**
-     * Checks user command has correct amount of tokens, Displays error message if not
+     * Checks user command has correct amount of tokens, Displays error message if
+     * not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
@@ -204,7 +204,8 @@ public class Client {
     }
 
     /**
-     * Checks acct command has correct amount of tokens, Displays error message if not
+     * Checks acct command has correct amount of tokens, Displays error message if
+     * not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
@@ -219,7 +220,8 @@ public class Client {
     }
 
     /**
-     * Checks pass command has correct amount of tokens, Displays error message if not
+     * Checks pass command has correct amount of tokens, Displays error message if
+     * not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
@@ -234,8 +236,8 @@ public class Client {
     }
 
     /**
-     * Checks type command has correct amount of tokens, and the argument is either A or B or C
-     * Displays error message if not
+     * Checks type command has correct amount of tokens, and the argument is either
+     * A or B or C Displays error message if not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
@@ -249,15 +251,16 @@ public class Client {
     }
 
     /**
-     * Checks list command has correct amount of tokens, and the argument is either V or F
-     * Displays error message if not
+     * Checks list command has correct amount of tokens, and the argument is either
+     * V or F Displays error message if not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
      */
     private boolean list(String[] tokens) {
         if (tokens.length != 2 && tokens.length != 3) {
-            System.out.println("LIST command format : LIST { F | V } <directory-path>. check README for specific directory path syntax");
+            System.out.println(
+                    "LIST command format : LIST { F | V } <directory-path>. check README for specific directory path syntax");
             return false;
         }
         if (!(tokens[1].toUpperCase().equals("V") || tokens[1].toUpperCase().equals("F"))) {
@@ -268,7 +271,8 @@ public class Client {
     }
 
     /**
-     * Checks cdir command has correct amount of tokens, Displays error message if not
+     * Checks cdir command has correct amount of tokens, Displays error message if
+     * not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
@@ -276,7 +280,8 @@ public class Client {
     private boolean cdir(String[] tokens) {
         // Check token lengths
         if (tokens.length != 2) {
-            System.out.println("CDIR command format : <directory-path> , check README for specific directory path syntax");
+            System.out.println(
+                    "CDIR command format : <directory-path> , check README for specific directory path syntax");
             return false;
         }
 
@@ -312,7 +317,8 @@ public class Client {
     }
 
     /**
-     * Checks kill command has correct amount of tokens, Displays error message if not
+     * Checks kill command has correct amount of tokens, Displays error message if
+     * not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
@@ -326,7 +332,8 @@ public class Client {
     }
 
     /**
-     * Checks name command has correct amount of tokens, Displays error message if not
+     * Checks name command has correct amount of tokens, Displays error message if
+     * not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
@@ -340,7 +347,8 @@ public class Client {
     }
 
     /**
-     * Checks tobe command has correct amount of tokens, Displays error message if not
+     * Checks tobe command has correct amount of tokens, Displays error message if
+     * not
      *
      * @param tokens tokenized input from command line
      * @return Boolean, true if command is ok, false if tokens not in correct format
@@ -359,8 +367,8 @@ public class Client {
     // **********************
 
     /**
-     * Checks the done command has the right about of arguments. If so sends it over then waits for a +response
-     * Shuts down the client
+     * Checks the done command has the right about of arguments. If so sends it over
+     * then waits for a +response Shuts down the client
      *
      * @param tokens tokenized input from command line
      * @return True if successfully finished, false if tokens incorrect
@@ -385,7 +393,8 @@ public class Client {
      * Performs checks on the tokens, then attempts to retrieve a file from server
      *
      * @param tokens tokenized input from command line
-     * @return True if exited successfully, false if something wrong with command entered.
+     * @return True if exited successfully, false if something wrong with command
+     *         entered.
      */
     private boolean retr(String[] tokens) {
         // Checking tokens length
@@ -447,8 +456,8 @@ public class Client {
     }
 
     /**
-     * Used only from within retr, Checks if send command is in right format
-     * Tells the server to send the file.
+     * Used only from within retr, Checks if send command is in right format Tells
+     * the server to send the file.
      *
      * @param tokens   Input tokens from command line
      * @param file     where the received file is to be saved
@@ -490,7 +499,6 @@ public class Client {
         if (!(mode.equals("NEW") || (mode.equals("OLD")) || (mode.equals("APP")))) {
             System.out.println("STOR command format : Store { NEW | OLD | APP } <fileName>");
         }
-
 
         // File name should not have directories
         if (fileName.contains(File.separator)) {

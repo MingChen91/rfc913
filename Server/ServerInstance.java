@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
 
-
 /**
  * This is a single instance of a server.
  */
@@ -27,11 +26,12 @@ public class ServerInstance implements Runnable {
     private boolean running = true;
 
     /**
-     * Takes in the socket allocated by the welcome socket
-     * Creates the needed handler for sending and receiving over the connection
-     * Creates the file handler used for writing and reading files
+     * Takes in the socket allocated by the welcome socket Creates the needed
+     * handler for sending and receiving over the connection Creates the file
+     * handler used for writing and reading files
      *
-     * @param connectionSocket socket allocated to this instance of server from the welcome socket
+     * @param connectionSocket socket allocated to this instance of server from the
+     *                         welcome socket
      */
     public ServerInstance(Socket connectionSocket) {
         // Socket
@@ -63,55 +63,54 @@ public class ServerInstance implements Runnable {
         System.out.println("Server instance terminated");
     }
 
-
     /**
-     * Decodes the incoming commands from the client and determines appropriate response
+     * Decodes the incoming commands from the client and determines appropriate
+     * response
      */
     private void decodeCommands() {
         String[] commands;
 
         commands = tokenizedCommands();
-        if (commands.length >0) {
-            switch (commands[0].toUpperCase()) {
-                case "USER":
-                    user(commands[1]);
-                    break;
-                case "ACCT":
-                    acct(commands[1]);
-                    break;
-                case "PASS":
-                    pass(commands[1]);
-                    break;
-                case "TYPE":
-                    type(commands[1]);
-                    break;
-                case "LIST":
-                    list(Arrays.copyOfRange(commands, 1, commands.length));
-                    break;
-                case "CDIR":
-                    cdir(commands[1]);
-                    break;
-                case "KILL":
-                    kill(commands[1]);
-                    break;
-                case "NAME":
-                    name(commands[1]);
-                    break;
-                case "DONE":
-                    done();
-                    break;
-                case "RETR":
-                    retr(commands[1]);
-                    break;
-                case "STOR":
-                    stor(commands[1], commands[2]);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
 
+        switch (commands[0].toUpperCase()) {
+            case "USER":
+                user(commands[1]);
+                break;
+            case "ACCT":
+                acct(commands[1]);
+                break;
+            case "PASS":
+                pass(commands[1]);
+                break;
+            case "TYPE":
+                type(commands[1]);
+                break;
+            case "LIST":
+                list(Arrays.copyOfRange(commands, 1, commands.length));
+                break;
+            case "CDIR":
+                cdir(commands[1]);
+                break;
+            case "KILL":
+                kill(commands[1]);
+                break;
+            case "NAME":
+                name(commands[1]);
+                break;
+            case "DONE":
+                done();
+                break;
+            case "RETR":
+                retr(commands[1]);
+                break;
+            case "STOR":
+                stor(commands[1], commands[2]);
+                break;
+            default:
+                break;
+        }
+
+    }
 
     // ****************
     // Helper function
@@ -136,14 +135,13 @@ public class ServerInstance implements Runnable {
             return connectionHandler.getIncomingMessage().split("\\s+");
         } else {
             closeConnection();
-            return new String[0];
+            String[] failed = new String[] { "" };
+            return failed;
         }
     }
 
-
     /**
-     * Sends the response message to the client
-     * Wrapper to include error handling.
+     * Sends the response message to the client Wrapper to include error handling.
      */
     private void sendResponse() {
         if (!(this.connectionHandler.sendMessage(responseMessage))) {
@@ -161,7 +159,6 @@ public class ServerInstance implements Runnable {
             closeConnection();
         }
     }
-
 
     /**
      * Closes stops the program and closes the connection safely.
@@ -181,8 +178,7 @@ public class ServerInstance implements Runnable {
     // ******************************************
 
     /**
-     * Checks if User is a valid user.
-     * Updates the login state and sends response.
+     * Checks if User is a valid user. Updates the login state and sends response.
      *
      * @param user user name
      */
@@ -197,8 +193,7 @@ public class ServerInstance implements Runnable {
     }
 
     /**
-     * Checks if acct matches the user.
-     * Updates the login state and sends response.
+     * Checks if acct matches the user. Updates the login state and sends response.
      *
      * @param acct account name
      */
@@ -213,8 +208,7 @@ public class ServerInstance implements Runnable {
     }
 
     /**
-     * Checks if pass matches the usr
-     * Updates the login state and sends response
+     * Checks if pass matches the usr Updates the login state and sends response
      *
      * @param pass password
      */
@@ -261,9 +255,9 @@ public class ServerInstance implements Runnable {
     }
 
     /**
-     * Lists the current directory the file handler is in.
-     * V for verbose, F for standard format.
-     * Lists current folder if no dir given. Else attempts to change to that folder then lists.
+     * Lists the current directory the file handler is in. V for verbose, F for
+     * standard format. Lists current folder if no dir given. Else attempts to
+     * change to that folder then lists.
      *
      * @param args 2 args, first is selecting V or F, second is dir name
      */
@@ -292,8 +286,7 @@ public class ServerInstance implements Runnable {
     }
 
     /**
-     * Changes the you're directly in
-     * See readme for specific syntax
+     * Changes the you're directly in See readme for specific syntax
      *
      * @param dir directory name.
      */
@@ -390,7 +383,8 @@ public class ServerInstance implements Runnable {
     }
 
     /**
-     * Renames a file in the current directory. Need to be used with tobe command together.
+     * Renames a file in the current directory. Need to be used with tobe command
+     * together.
      *
      * @param fileName File to change name.
      */
@@ -528,7 +522,7 @@ public class ServerInstance implements Runnable {
             }
         }
 
-        // Check  fileSize
+        // Check fileSize
         String[] tks = tokenizedCommands();
         long fileSize = Long.parseLong(tks[1]);
         if (!filesHandler.enoughFreeSpace(fileSize, currentDir)) {
@@ -539,7 +533,7 @@ public class ServerInstance implements Runnable {
         responseMessage = "+ok, waiting for file";
         sendResponse();
 
-        //waiting for file to send
+        // waiting for file to send
         try {
             connectionHandler.receiveFile(file, fileSize, append);
             responseMessage = "+Saved " + fileName;

@@ -1,0 +1,427 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome file</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#how-to-set-up">How to Set up</a></li>
+<li><a href="#commands-and-examples">Commands and Examples</a>
+<ul>
+<li><a href="#logging-in">Logging in</a></li>
+<li><a href="#navigating-remote-server">Navigating Remote Server</a></li>
+<li><a href="#transferring-files">Transferring Files</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <h1 id="introduction">Introduction</h1>
+<p>This is a project is for University of Auckland. This implements RFC913 simple file transfer protocol in java. <a href="https://tools.ietf.org/html/rfc913">Link to Specification</a></p>
+<p>All commands are implemented.</p>
+<p>Both Server and Client is started on “localhost”.<br>
+Port is set to “6666” at the moment. As the default “115” port sometimes might be reserved.<br>
+<em>If the port and ip needs to be changed, these can be edited in Server/Server.java line 12-13 and Client/Client.java line 24-25</em></p>
+<h1 id="how-to-set-up">How to Set up</h1>
+<p><em>This has been tested on ubuntu linux 20.04, but should work in windows too. JDK and JRE 14 is required. make sure java and javac has been added to your system path. Check google on how to do this</em></p>
+<ul>
+<li>Open bash/terminal in the root folder <code>(../ming-rfc913)</code></li>
+<li>To compile :<br>
+<code>$ javac Client/Client.java</code><br>
+<code>$ javac Server/Server.java</code></li>
+<li>To run:<br>
+Open two separate instances of terminal in the room folder <code>(../ming-rfc913)</code><br>
+Terminal one (Server)<br>
+<code>$ java Server.Server</code><br>
+Terminal two (Client )<br>
+<code>$ java Client.Client</code></li>
+</ul>
+<h1 id="commands-and-examples">Commands and Examples</h1>
+<p>All commands can be <strong>entered ignoring case</strong>. If format is entered incorrectly the client will prompt you the correct format.<br>
+eg:</p>
+<pre><code>user adfsdf asdfds
+USER command format : USER 
+list
+LIST command format : LIST { F | V } . check README for specific directory path syntax
+</code></pre>
+<h2 id="logging-in">Logging in</h2>
+<p>Most commands require the user to be loggedn first. User credentials are stored in<br>
+<code>(../ming-rfc913/Server/Configs/userInfo.csv)</code><br>
+Currently in file there are 4 users:<br>
+user1 and user2 requires all 3 parameters to be entered<br>
+User3 only needs username and password to be logged in, and admin only needs the user name.</p>
+
+<table>
+<thead>
+<tr>
+<th>user</th>
+<th>account</th>
+<th>password</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>user1</td>
+<td>account1</td>
+<td>pass1</td>
+</tr>
+<tr>
+<td>user2</td>
+<td>account2</td>
+<td>pass2</td>
+</tr>
+<tr>
+<td>user3</td>
+<td></td>
+<td>pass3</td>
+</tr>
+<tr>
+<td>admin</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table><h3 id="user">USER</h3>
+<p><strong>format:</strong> <code>USER user-id</code><br>
+The user command is used to enter the username.</p>
+<ul>
+<li>incorrect username example</li>
+</ul>
+<pre><code>USER wronguser
+-Invalid user-id, try again </code></pre>
+<ul>
+<li>correct username example</li>
+</ul>
+<pre><code>USER user1
++User-id valid, send account and password</code></pre> 
+<ul>
+<li>admin acount only needs username</li>
+</ul>
+<pre><code>USER admin
+!admin logged in</code></pre>
+<h3 id="acct">ACCT</h3>
+<p><strong>format:</strong> <code>ACCT account</code><br>
+Once a valid username is entered, you should then enter the account name.</p>
+<ul>
+<li>Wrong account example</li>
+</ul>
+<pre><code>ACCT wrongaccount
+-Invalid Account, try again</code></pre>
+<ul>
+<li>Correct account example</li>
+</ul>
+<pre><code>ACCT account1 
++Account ok or not needed. Send your password next</code></pre>
+<h3 id="pass">PASS</h3>
+<p><strong>format:</strong> <code>PASS password</code><br>
+Once a valid username is entered, you can also enter the password.</p>
+<ul>
+<li>Entering username, password then account</li>
+</ul>
+<pre><code>USER user1
++User-id valid, send account and password
+PASS pass1
++Password ok but you haven't specified the account
+ACCT account1 
+!Account was ok or not needed. Skip the password.</code></pre>
+<ul>
+<li>Enter username, account then password</li>
+</ul>
+<pre><code>USER user2
++User-id valid, send account and password
+ACCT account2
++Account ok or not needed. Send your password next
+PASS pass2
+!Password is ok and you can begin file transfers.</code></pre> 
+<ul>
+<li>user3 only needs username and pass</li>
+</ul>
+<pre><code>USER user3
++User-id valid, send account and password
+PASS pass3
+!Password is ok and you can begin file transfers.</code></pre>
+<ul>
+<li>Wrong password</li>
+</ul>
+<pre><code>USER user1
++User-id valid, send account and password
+PASS wrongpass
+-Wrong password, try again</code></pre>
+<h2 id="navigating-remote-server">Navigating Remote Server</h2>
+<p>Once you receive a message starting with “!”, it means you’re logged in and other commands are availabe.</p>
+<h3 id="cdir">CDIR</h3>
+<p><strong>Format:</strong> <code>CDIR new-directory</code><br>
+CDIR is used to change directories, <code>new-directory</code> syntax:</p>
+<ol>
+<li>You can navigate to the default files folder using “~”</li>
+<li>Specify absolute paths by prepending with “@”</li>
+<li>Go up a folder using “…”, can only go up a dir at a time</li>
+<li>Otherwise it’s relative to the current directory.<br>
+<em>There are no restrictions in which folders you can navigate to;</em></li>
+</ol>
+<ul>
+<li>Examples of navigating around</li>
+</ul>
+<pre><code>CDIR ~
+!Changed working dir to /home/ming/ming-rfc913/Server/Files
+CDIR ..
+!Changed working dir to /home/ming/ming-rfc913/Server
+CDIR ..
+!Changed working dir to /home/ming/ming-rfc913
+CDIR Server
+!Changed working dir to /home/ming/ming-rfc913/Server
+CDIR @/home/ming
+!Changed working dir to /home/ming
+CDIR /home/ming/non_existant_folder
+-Can't connect to directory because directory does not exist or you have no permission
+CDIR ~
+!Changed working dir to /home/ming/ming-rfc913/Server/Files
+</code></pre>
+<p>CDIR also requires you to be logged in. If no username has been entered, you will be rejected. If username has been entered it’ll prompt you to enter account and password</p>
+<ul>
+<li>Example of logging in then changing dir</li>
+</ul>
+<pre><code>CDIR ~
+-Cannot use CDIR when not logged in
+USER user1
++User-id valid, send account and password
+CDIR ~
++directory ok, send account/password
+ACCT account1
++account ok send password
+PASS pass1
+!Changed working dir to /home/ming/ming-rfc913/Server/Files</code></pre>
+<ul>
+<li>Example of failure to log in.</li>
+</ul>
+<pre><code>USER user2
++User-id valid, send account and password
+CDIR Folder2
++directory ok, send account/password
+ACCT account2
++account ok send password
+PASS wrongpass
+-invalid password</code></pre>
+<h3 id="list">LIST</h3>
+<p><strong>Format:</strong> <code>LIST { F | V } directory-path</code><br>
+List has two modes, V for a more detailed listing, and F just lists the file names.<br>
+<code>directory-path</code> follows the same syntax as CDIR</p>
+<pre><code>LIST F ~
++/home/ming/ming-rfc913/Server/Files
+| FileName                       |
+----------------------------------
+| longtext1.txt                  |
+| cat.png                        |
+| shorttxt.txt                   |
+| Folder2/..                     |
+
+LIST V Folder2
++/home/ming/ming-rfc913/Server/Files/Folder2
+| FileName                       | ModifiedTime         | Size(B)    | Owner                | RWX |
+---------------------------------------------------------------------------------------------------
+| lenaa.tif                      | 01/09/2020 06:09     | 65734      | ming                 | RW- |
+| longtext2.txt                  | 01/09/2020 06:09     | 3940       | ming                 | RW- |
+| Folder3/..                     | 02/09/2020 18:15     | 4096       | ming                 | RWX |
+
+LIST V wrongfolder
+-Directory invalid
+LIST F @/home/ming/ming-rfc913
++/home/ming/ming-rfc913
+| FileName                       |
+----------------------------------
+| .git/..                        |
+| Utils/..                       |
+| Client/..                      |
+| Server/..                      |
+</code></pre>
+<h3 id="kill">KILL</h3>
+<p><strong>format:</strong> <code>KILL file-spec</code><br>
+Kill is used to delete a file withing the current folder. then checking it is removed.<br>
+<code>file-spec</code> is relative to the last active dir, either from LIST or CDIR. USE <code>LIST F</code> to check where you are.</p>
+<ul>
+<li>Deleting a file</li>
+</ul>
+<pre><code>LIST F ~
++/home/ming/ming-rfc913/Server/Files
+| FileName                       |
+----------------------------------
+| longtext1.txt                  |
+| cat.png                        |
+| shorttxt.txt                   |
+| Folder2/..                     |
+
+KILL shorttxt.txt
++shorttxt.txt deleted
+LIST F 
++/home/ming/ming-rfc913/Server/Files
+| FileName                       |
+----------------------------------
+| longtext1.txt                  |
+| cat.png                        |
+| Folder2/..                     |
+</code></pre>
+<ul>
+<li>Attempting to delete a non-existant file</li>
+</ul>
+<pre><code>KILL shorttxt.txt
+-Not deleted because no file exists
+</code></pre>
+<h3 id="name-tobe">NAME, TOBE</h3>
+<p><strong>Format:</strong> <code>NAME old-file-spec</code><br>
+<strong>Format:</strong> <code>TOBE new-file-spec</code><br>
+<code>old-file-spec</code> is relative to current server directory. The file you want to change the name of.<br>
+<code>new-file-spec</code> new name you wish to change to.</p>
+<p>Changes a file name. First checks if file exists, then send<code>TOBE</code> with new name, if any other commands is sent the renaming is cancelled</p>
+<pre><code>LIST F
++/home/ming/ming-rfc913/Server/Files
+| FileName                       |
+----------------------------------
+| longtext1.txt                  |
+| cat.png                        |
+| Folder2/..                     |
+
+NAME cat.png
++File Exists
+TOBE cat1.png
++cat.png renamed to cat1.png
+NAME cat2.png
+-File wasn't renamed because cat2.png does not exist
+NAME cat1.png
++File Exists
+LIST F
+-Name change aborted as you need to send TOBE with new file name
+</code></pre>
+<h3 id="done">DONE</h3>
+<p><strong>Format:</strong> <code>DONE</code><br>
+Done is used to indicate the end of the session from the client.</p>
+<ul>
+<li>Client Side display</li>
+</ul>
+<pre><code>DONE
++Thank you for using MCHE226 STFP service.
+Closing Client Session
+Client Session ended.</code></pre>
+<ul>
+<li>Server Side display</li>
+</ul>
+<pre><code>Closing Server instance
+Server instance terminated</code></pre>
+<h2 id="transferring-files">Transferring Files</h2>
+<h3 id="type">TYPE</h3>
+<p><strong>format:</strong> <code>TYPE { A | B | C }</code><br>
+The rfc specification specifics different ways to send the file. A for Ascii, B for binary, C for continious.</p>
+<pre><code>TYPE A
++Using Ascii mode
+TYPE B
++Using Binary mode
+TYPE C
++Using Continuous mode
+TYPE D
+-Type not valid</code></pre>
+<h3 id="retrsendstop">RETR,SEND,STOP</h3>
+<p><strong>format:</strong><code>RETR file-spec</code><br>
+<code>file-spec</code> is relative to the last active dir, either from LIST or CDIR. USE <code>LIST F</code> to check where you are.<br>
+<strong>format:</strong><code>SEND</code><br>
+<strong>format:</strong><code>STOP</code></p>
+<p>Retrieves a file from the current folder from the Server to the remote.<br>
+Aftering sending the RETR command,  if the file exsists, the server will reply with the size of the file. You  then have the option to SEND or STOP ,which continues or stops the transfer.</p>
+<ul>
+<li>Checking what’s in the director</li>
+</ul>
+<pre><code>LIST F
++/home/ming/ming-rfc913/Server/Files
+| FileName                       |
+----------------------------------
+| longtext1.txt                  |
+| cat.png                        |
+| Folder2/..                     |
+</code></pre>
+<ul>
+<li>Retriving an file</li>
+</ul>
+<pre><code>RETR cat.png
+48387
+SEND
++Sending, this might take a while depending on size
+Ok file sent</code></pre>
+<ul>
+<li>Rejecting a file after RETR command</li>
+</ul>
+<pre><code>RETR longtext1.txt
+1176
+STOP
++ok, RETR aborted
+RETR nonexistant.file
+-File doesn't exist
+</code></pre>
+<h3 id="stor">STOR</h3>
+<p><strong>format:</strong><code>STOR { NEW | OLD | APP } file-spec</code></p>
+<pre><code>NEW: attempts to generate a new file in the server
+OLD: overides old file
+APP: appends to the old file.</code></pre>
+<p><code>file-spec</code> name of file to store in the server. must be located in clients <code>Client/Files</code> folder.</p>
+<p>Stores a file from the clients file folder to a servers current folder</p>
+<ul>
+<li>Changing to a different directory than default on the server</li>
+</ul>
+<pre><code>CDIR Folder2
+!Changed working dir to /home/ming/ming-rfc913/Server/Files/Folder2
+LIST F
++/home/ming/ming-rfc913/Server/Files/Folder2
+| FileName                       |
+----------------------------------
+| lenaa.tif                      |
+| longtext2.txt                  |
+| Folder3/..                     |
+</code></pre>
+<ul>
+<li>Sending over a file containing</li>
+</ul>
+<pre><code>STOR new client1.txt
++File does not exists, will create a new file
++ok, waiting for file
++Saved client1.</code></pre>
+<ul>
+<li>Sending same file over using New tag does not work, but Old will.</li>
+</ul>
+<pre><code>STOR new client1.txt
+-File Exists, but system doesn't support generations
+STOR old client1.txt
++Will write over old file
++ok, waiting for file
++Saved client1.txt</code></pre>
+<ul>
+<li>Appending to an existing file. The contents of client1.txt is appended to the existing file.</li>
+</ul>
+<pre><code>STOR app client1.txt
+Will append to file
++ok, waiting for file
++Saved client1.txt</code></pre>
+<ul>
+<li>Trying to save something to root directory of linux, no write permission</li>
+</ul>
+<pre><code>CDIR @/
+!Changed working dir to /
+STOR new client1.txt
++File does not exists, will create a new file
++ok, waiting for file
+-Couldn't save because/client1.txt (Permission denied)
+</code></pre>
+
+    </div>
+  </div>
+</body>
+
+</html>
