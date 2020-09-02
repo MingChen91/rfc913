@@ -276,7 +276,7 @@ public class Client {
     private boolean cdir(String[] tokens) {
         // Check token lengths
         if (tokens.length != 2) {
-            System.out.println("LIST command format : LIST { F | V } <directory-path> , check README for specific directory path syntax");
+            System.out.println("CDIR command format : <directory-path> , check README for specific directory path syntax");
             return false;
         }
 

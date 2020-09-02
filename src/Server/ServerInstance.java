@@ -71,43 +71,44 @@ public class ServerInstance implements Runnable {
         String[] commands;
 
         commands = tokenizedCommands();
-
-        switch (commands[0].toUpperCase()) {
-            case "USER":
-                user(commands[1]);
-                break;
-            case "ACCT":
-                acct(commands[1]);
-                break;
-            case "PASS":
-                pass(commands[1]);
-                break;
-            case "TYPE":
-                type(commands[1]);
-                break;
-            case "LIST":
-                list(Arrays.copyOfRange(commands, 1, commands.length));
-                break;
-            case "CDIR":
-                cdir(commands[1]);
-                break;
-            case "KILL":
-                kill(commands[1]);
-                break;
-            case "NAME":
-                name(commands[1]);
-                break;
-            case "DONE":
-                done();
-                break;
-            case "RETR":
-                retr(commands[1]);
-                break;
-            case "STOR":
-                stor(commands[1], commands[2]);
-                break;
-            default:
-                break;
+        if (commands.length >0) {
+            switch (commands[0].toUpperCase()) {
+                case "USER":
+                    user(commands[1]);
+                    break;
+                case "ACCT":
+                    acct(commands[1]);
+                    break;
+                case "PASS":
+                    pass(commands[1]);
+                    break;
+                case "TYPE":
+                    type(commands[1]);
+                    break;
+                case "LIST":
+                    list(Arrays.copyOfRange(commands, 1, commands.length));
+                    break;
+                case "CDIR":
+                    cdir(commands[1]);
+                    break;
+                case "KILL":
+                    kill(commands[1]);
+                    break;
+                case "NAME":
+                    name(commands[1]);
+                    break;
+                case "DONE":
+                    done();
+                    break;
+                case "RETR":
+                    retr(commands[1]);
+                    break;
+                case "STOR":
+                    stor(commands[1], commands[2]);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -401,7 +402,7 @@ public class ServerInstance implements Runnable {
             return;
         }
         // Check if file exists
-        if (filesHandler.fileExist(fileName)) {
+        if (!filesHandler.fileExist(fileName)) {
             // cannot find file.
             responseMessage = String.format("-File wasn't renamed because %s does not exist", fileName);
             sendResponse();
@@ -491,7 +492,6 @@ public class ServerInstance implements Runnable {
 
         // Check what mode they want to send in
         boolean append = false;
-        System.out.println(mode);
         switch (mode.toUpperCase()) {
             case "NEW" -> {
                 // New cannot over ride existing file
