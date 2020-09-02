@@ -7,6 +7,10 @@ Both Server and Client is started on "localhost".
 Port is set to "6666" at the moment. As the default "115" port sometimes might be reserved. 
 *If the port and ip needs to be changed, these can be edited in Server/Server.java line 12-13 and Client/Client.java line 24-25*
 
+Multiple instances of client can connect to the server as the server forks off a new thread each time. 
+# Files
+Files for the client and server transfer are stored by default in in the `Files` folder within respective directories. ie `Client/Files`, `Server/Files` 
+
 # How to Set up
 *This has been tested on ubuntu linux 20.04, but should work in windows too. JDK and JRE 14 is required. make sure java and javac has been added to your system path. Check google on how to do this* 
 
@@ -20,6 +24,9 @@ Port is set to "6666" at the moment. As the default "115" port sometimes might b
 	` $ java Server.Server`
 	Terminal two (Client )
 	` $ java Client.Client`
+**(Can open as many clients terminals as you need)**
+	
+	
 
 # Commands and Examples
 All commands can be **entered ignoring case**. If format is entered incorrectly the client will prompt you the correct format. 
