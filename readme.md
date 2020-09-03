@@ -41,7 +41,7 @@ LIST command format : LIST { F | V } <directory-path>. check README for specific
 
 ## Logging in 
 Most commands require the user to be loggedn first. User credentials are stored in 
-`(../ming-rfc913/Server/Configs/userInfo.csv)`
+`(../rfc913/Server/Configs/userInfo.csv)`
 Currently in file there are 4 users:
 user1 and user2 requires all 3 parameters to be entered
 User3 only needs username and password to be logged in, and admin only needs the user name. 
