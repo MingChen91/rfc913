@@ -14,12 +14,12 @@ Files for the client and server transfer are stored by default in in the `Files`
 # How to Set up
 *This has been tested on ubuntu linux 20.04, but should work in windows too. JDK and JRE 14 is required. make sure java and javac has been added to your system path. Check google on how to do this* 
 
- - Open bash/terminal in the root folder `(../ming-rfc913) `
+ - Open bash/terminal in the root folder `(../rfc913) `
  - To compile : 
  `$ javac Client/Client.java `
  `$ javac Server/Server.java`
 - To run: 
-	Open two separate instances of terminal in the room folder `(../ming-rfc913)`
+	Open two separate instances of terminal in the room folder `(../rfc913)`
 	Terminal one (Server)
 	` $ java Server.Server`
 	
